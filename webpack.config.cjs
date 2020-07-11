@@ -1,14 +1,33 @@
-import path from 'path';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.js',
+  // context: path.resolve(__dirname, 'src'),
+  entry: {
+    main: './src/index.js',
+  },
   mode: 'development',
   output: {
-    filename: 'bundle.js',
+    filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
-  plugins: [new HtmlWebpackPlugin({
-    template: 'app/index.html',
-  })],
+  plugins: [
+    new HtmlWebpackPlugin({
+      title: 'Project 33',
+      template: './src/index.html',
+    }),
+    new CleanWebpackPlugin()],
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.(png|jpg|svg|gif)$/,
+        use: ['file-loader'],
+      },
+    ],
+  },
 };
