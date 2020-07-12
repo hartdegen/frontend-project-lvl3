@@ -1,3 +1,7 @@
+body {
+    background: grey;
+};
+
 .container {
     padding-top: 2rem;
     max-width: 1000px;

@@ -17,17 +17,17 @@ module.exports = {
       title: 'Project 33',
       template: './src/index.html',
     }),
-    new CleanWebpackPlugin()],
+    new CleanWebpackPlugin(),
+  ],
   module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
-      },
-      {
-        test: /\.(png|jpg|svg|gif)$/,
-        use: ['file-loader'],
-      },
+    rules: [{
+      test: /\.css$/,
+      use: ['style-loader', 'css-loader'],
+    },
+    {
+      test: /\.(png|jpe?g|svg|gif)$/,
+      use: 'file-loader',
+    },
     ],
   },
 };
