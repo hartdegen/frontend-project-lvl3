@@ -1,11 +1,10 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import _ from 'lodash';
+import * as yup from 'yup';
 // import json from './assets/json';
 import logo from './assets/logo.png';
 import './styles/styles.css';
-console.log('Oh, Hello there');
 
-let yup = require('yup');
 let schema = yup.object().shape({
   website: yup.string().url()
 });
@@ -23,16 +22,14 @@ const checkInputValid = () => {
         website: `${url}`,
       })
       .then((bool) => {
-        console.log(isValid, 'thas content')
         isValid = bool;
       }) // => true);
   };
-  setTimeout(() => console.log(isValid, 'set Timeout'), 1000);
+  setTimeout(() => console.log('setting Timeout'), 1000);
   const input = document.querySelector('.inputField');
-  
+
   input.addEventListener('keyup', () => {
     checkUrl(input.value);
-    console.log(isValid, 'is valid?')
     if (isValid) {
       state.typedUrl.valid = true;
     } else {
@@ -51,5 +48,7 @@ const render = (state) => {
 }
 
 checkInputValid();
+console.log('Oh, Hello there');
+
 
 export default (a, b) => a + b;
