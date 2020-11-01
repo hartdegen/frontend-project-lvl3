@@ -7,10 +7,10 @@ const runApp = () => {
     resources: {
       ru: {
         translation: {
-          formTitle: `RSS Reader`,
-          lead: `Start reading RSS today! It is easy, it is nicely.`,
-          button: `Add`,
-          exampleBlock: `Example: https://news.yandex.ru/auto.rss`,
+          formTitle: 'RSS Reader',
+          lead: 'Start reading RSS today! It is easy, it is nicely.',
+          button: 'Add',
+          exampleBlock: 'Example: https://news.yandex.ru/auto.rss',
         },
       },
     },
@@ -19,14 +19,14 @@ const runApp = () => {
 
 runApp();
 
-const formTitle = document.querySelector(`.formTitle`);
+const formTitle = document.querySelector('.formTitle');
 formTitle.innerHTML = i18next.t('formTitle');
 
-const lead = document.querySelector(`.lead`);
+const lead = document.querySelector('.lead');
 lead.innerHTML = i18next.t('lead');
 
-const button = document.querySelector(`button`);
+const button = document.querySelector('button');
 button.innerHTML = i18next.t('button');
 
-const exampleBlock = document.querySelector(`.exampleBlock`);
+const exampleBlock = document.querySelector('.exampleBlock');
 exampleBlock.innerHTML = i18next.t('exampleBlock');
