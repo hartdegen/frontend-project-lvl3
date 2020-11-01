@@ -6,6 +6,7 @@ module.exports = {
   context: path.resolve(__dirname, 'src'),
   entry: {
     main: './index.js',
+    i18next: './i18next.js'
   },
   mode: 'development',
   output: {
