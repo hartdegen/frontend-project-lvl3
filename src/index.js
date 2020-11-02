@@ -9,26 +9,24 @@ const state = {
   processState: 'filling',
   typedUrlValid: null,
   approvedRssList: {},
+  errors: [],
 };
 
 const form = document.querySelector('form');
 const input = form.querySelector('input');
 const submitButton = form.querySelector('button');
 
-const createFeedsList = () => {
+const renderFeedsList = () => {
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   h2.textContent = 'Feeds';
   div.appendChild(h2);
   const ul = document.createElement('ul');
-  console.log(state.approvedRssList);
-  for (const url in state.approvedRssList) {
-    const {
-      title,
-    } = state.approvedRssList[url];
-    const {
-      description,
-    } = state.approvedRssList[url];
+  const rssListData = _.values(state.approvedRssList);
+  rssListData.forEach(({
+    title,
+    description,
+  }) => {
     const h3 = document.createElement('h3');
     const p = document.createElement('p');
     h3.textContent = title;
@@ -37,35 +35,32 @@ const createFeedsList = () => {
     li.appendChild(h3);
     li.appendChild(p);
     ul.prepend(li);
-  }
+  });
   div.append(ul);
   const feeds = document.querySelector('.feeds');
   feeds.innerHTML = div.innerHTML;
 };
 
-const createPostsList = () => {
+const renderPostsList = () => {
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
+  const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
   const urls = _.keys(state.approvedRssList);
   const lastAddedUrl = urls[urls.length - 1];
-  const newestPosts = state.approvedRssList[lastAddedUrl].posts;
-  const ul = document.createElement('ul');
-  for (const post in newestPosts) {
-    const {
-      title,
-    } = newestPosts[post];
-    const {
-      link,
-    } = newestPosts[post];
+  const newestPosts = _.values(state.approvedRssList[lastAddedUrl].posts);
+  newestPosts.forEach(({
+    title,
+    link,
+  }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
     const li = document.createElement('li');
     li.appendChild(a);
     ul.appendChild(li);
-  }
+  });
   div.append(ul);
   const posts = document.querySelector('.posts');
   posts.innerHTML = div.innerHTML;
@@ -84,8 +79,8 @@ const watchedState = onChange(state, (path, value) => {
       break;
     case `approvedRssList.${urlFromRssList}`:
       if (!_.isEmpty(state.approvedRssList)) {
-        createFeedsList();
-        createPostsList();
+        renderFeedsList();
+        renderPostsList();
       }
       break;
     case 'processState':
@@ -96,8 +91,7 @@ const watchedState = onChange(state, (path, value) => {
       }
       break;
     default:
-      console.log('SOMETHINGS WRONG');
-      break;
+      throw new Error('SOMETHINGS WRONG');
   }
 });
 
