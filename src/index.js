@@ -80,7 +80,6 @@ const processStateHandler = (processState) => {
       break;
     case 'sending':
       submitButton.disabled = true;
-      renderLoadingInfo('Loading, please wait');
       break;
     case 'finished':
       submitButton.disabled = false;
@@ -140,14 +139,12 @@ const parseRssData = (dataObj, urlFromInput) => {
 };
 // eslint-disable-next-line max-len
 const checkRssData = (urlFromInput, timerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
-  console.log('STATE', state.processState);
-  console.log('IS RRS LIST HAS URL', isRssListHasUrl);
+  console.log('STATE BEGIN', state.processState);
   let timeId;
   if (!isRssListHasUrl) {
     const proxy = 'cors-anywhere.herokuapp.com';
     axios.get(`https://${proxy}/${urlFromInput}`)
       .then((obj) => {
-        console.log('PARSING DATA');
         parseRssData(obj, urlFromInput);
         timeId = setTimeout(() => checkRssData(urlFromInput, timeId, false), 5000);
       })
@@ -157,11 +154,12 @@ const checkRssData = (urlFromInput, timerId, isRssListHasUrl = _.has(state.appro
         clearTimeout(timerId);
       })
       .finally(() => {
-        console.log('FINALLY STATE', state.processState);
         if (state.processState === 'sending') {
           watchedState.processState = 'finished';
-        } 
-        console.log('--------------------------------');
+          watchedState.typedUrlValid = true;
+        }
+        console.log('STATE FINALLY', state.processState);
+        console.log('------------------');
       });
   } else {
     watchedState.typedUrlValid = true;
@@ -174,6 +172,7 @@ form.addEventListener('submit', (e) => {
   const urlFromInput = e.target.querySelector('input').value;
   if (!isUrlValid(urlFromInput)) {
     watchedState.typedUrlValid = false;
+    watchedState.processState = 'filling';
   } else {
     setTimeout(() => checkRssData(urlFromInput), 1);
   }
