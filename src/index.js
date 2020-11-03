@@ -6,16 +6,17 @@ import onChange from 'on-change';
 import isUrlValid from './urlCheking.js';
 
 const state = {
-  processState: 'filling',
+  processState: 'valid',
   typedUrlValid: null,
   approvedRssList: {},
   errors: [],
 };
-
 const form = document.querySelector('form');
 const input = form.querySelector('input');
 const submitButton = form.querySelector('button');
-
+const renderLoadingInfo = (text) => {
+  document.querySelector('.loadingInfo').textContent = text;
+};
 const renderFeedsList = () => {
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
@@ -40,7 +41,6 @@ const renderFeedsList = () => {
   const feeds = document.querySelector('.feeds');
   feeds.innerHTML = div.innerHTML;
 };
-
 const renderPostsList = () => {
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
@@ -65,16 +65,43 @@ const renderPostsList = () => {
   const posts = document.querySelector('.posts');
   posts.innerHTML = div.innerHTML;
 };
+const processStateHandler = (processState) => {
+  switch (processState) {
+    case 'networkErorr':
+      submitButton.disabled = false;
+      renderLoadingInfo('Network Error');
+      break;
+    case 'alreadyExists':
+      submitButton.disabled = false;
+      renderLoadingInfo('Rss already exists');
+      break;
+    case 'filling':
+      submitButton.disabled = false;
+      break;
+    case 'sending':
+      submitButton.disabled = true;
+      renderLoadingInfo('Loading, please wait');
+      break;
+    case 'finished':
+      submitButton.disabled = false;
+      renderLoadingInfo('Rss has been loaded');
+      break;
+    default:
+      throw new Error(`Unknown state: ${processState}`);
+  }
+};
 
 const watchedState = onChange(state, (path, value) => {
   const urlFromRssList = path.split('approvedRssList.')[1];
   switch (path) {
     case 'typedUrlValid':
       if (value) {
+        submitButton.disabled = false;
         input.style.border = null;
-        input.value = '';
       } else {
+        submitButton.disabled = false;
         input.style.border = 'thick solid red';
+        renderLoadingInfo('Must be valid url');
       }
       break;
     case `approvedRssList.${urlFromRssList}`:
@@ -84,17 +111,12 @@ const watchedState = onChange(state, (path, value) => {
       }
       break;
     case 'processState':
-      if (value === 'sending') {
-        submitButton.disabled = true;
-      } else {
-        submitButton.disabled = false;
-      }
+      processStateHandler(value);
       break;
     default:
-      throw new Error('SOMETHINGS WRONG');
+      throw new Error(`Unknown path: ${path}`);
   }
 });
-
 const parseRssData = (dataObj, urlFromInput) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
@@ -116,33 +138,43 @@ const parseRssData = (dataObj, urlFromInput) => {
     posts,
   };
 };
-
-const checkRssData = (urlFromInput, isRssListUnused = !state.approvedRssList[urlFromInput]) => {
-  if (isUrlValid(urlFromInput) && isRssListUnused) {
-    let timerId;
-    watchedState.typedUrlValid = true;
+// eslint-disable-next-line max-len
+const checkRssData = (urlFromInput, timerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
+  console.log('STATE', state.processState);
+  console.log('IS RRS LIST HAS URL', isRssListHasUrl);
+  let timeId;
+  if (!isRssListHasUrl) {
     const proxy = 'cors-anywhere.herokuapp.com';
     axios.get(`https://${proxy}/${urlFromInput}`)
       .then((obj) => {
-        console.log('REPEATING TEST', Math.random());
+        console.log('PARSING DATA');
         parseRssData(obj, urlFromInput);
-        timerId = setTimeout(() => checkRssData(urlFromInput, true), 5000);
+        timeId = setTimeout(() => checkRssData(urlFromInput, timeId, false), 5000);
       })
       .catch((error) => {
         console.log('ERRRRRRRR', error);
+        watchedState.processState = 'networkErorr';
         clearTimeout(timerId);
       })
       .finally(() => {
-        watchedState.processState = 'filling';
+        console.log('FINALLY STATE', state.processState);
+        if (state.processState === 'sending') {
+          watchedState.processState = 'finished';
+        } 
+        console.log('--------------------------------');
       });
   } else {
-    watchedState.typedUrlValid = false;
-    watchedState.processState = 'filling';
+    watchedState.typedUrlValid = true;
+    watchedState.processState = 'alreadyExists';
   }
 };
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   watchedState.processState = 'sending';
   const urlFromInput = e.target.querySelector('input').value;
-  setTimeout(() => checkRssData(urlFromInput), 1);
+  if (!isUrlValid(urlFromInput)) {
+    watchedState.typedUrlValid = false;
+  } else {
+    setTimeout(() => checkRssData(urlFromInput), 1);
+  }
 });
