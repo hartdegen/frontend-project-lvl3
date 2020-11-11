@@ -11,12 +11,14 @@ const state = {
   approvedRssList: {},
   errors: [],
 };
+
 const form = document.querySelector('form');
 const input = form.querySelector('input');
 const submitButton = form.querySelector('button');
 const renderLoadingInfo = (text) => {
   document.querySelector('.loadingInfo').textContent = text;
 };
+
 const renderFeedsList = () => {
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
@@ -24,10 +26,7 @@ const renderFeedsList = () => {
   div.appendChild(h2);
   const ul = document.createElement('ul');
   const rssListData = _.values(state.approvedRssList);
-  rssListData.forEach(({
-    title,
-    description,
-  }) => {
+  rssListData.forEach(({ title, description }) => {
     const h3 = document.createElement('h3');
     const p = document.createElement('p');
     h3.textContent = title;
@@ -41,6 +40,7 @@ const renderFeedsList = () => {
   const feeds = document.querySelector('.feeds');
   feeds.innerHTML = div.innerHTML;
 };
+
 const renderPostsList = () => {
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
@@ -48,12 +48,11 @@ const renderPostsList = () => {
   h2.textContent = 'Posts';
   div.appendChild(h2);
   const urls = _.keys(state.approvedRssList);
-  const lastAddedUrl = urls[urls.length - 1];
-  const newestPosts = _.values(state.approvedRssList[lastAddedUrl].posts);
-  newestPosts.forEach(({
-    title,
-    link,
-  }) => {
+  const posts = urls.reduce((acc, url) => {
+    const postsFromUrl = _.values(state.approvedRssList[url].posts);
+    return [...postsFromUrl, ...acc];
+  }, []);
+  posts.forEach(({ title, link }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
@@ -62,9 +61,10 @@ const renderPostsList = () => {
     ul.appendChild(li);
   });
   div.append(ul);
-  const posts = document.querySelector('.posts');
-  posts.innerHTML = div.innerHTML;
+  const postsElement = document.querySelector('.posts');
+  postsElement.innerHTML = div.innerHTML;
 };
+
 const processStateHandler = (processState) => {
   switch (processState) {
     case 'networkErorr':
@@ -116,12 +116,14 @@ const watchedState = onChange(state, (path, value) => {
       throw new Error(`Unknown path: ${path}`);
   }
 });
+
 const parseRssData = (dataObj, urlFromInput) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
   const items = channel.querySelectorAll('item');
   const posts = {};
+
   items.forEach((el) => {
     const pubDate = Date.parse(el.querySelector('pubDate').textContent);
     const title = el.querySelector('title').textContent;
@@ -131,16 +133,19 @@ const parseRssData = (dataObj, urlFromInput) => {
       link,
     };
   });
+
   watchedState.approvedRssList[urlFromInput] = {
     title: channel.querySelector('title').textContent,
     description: channel.querySelector('description').textContent,
     posts,
   };
 };
+
 // eslint-disable-next-line max-len
 const checkRssData = (urlFromInput, timerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
   console.log('STATE BEGIN', state.processState);
   let timeId;
+
   if (!isRssListHasUrl) {
     const proxy = 'cors-anywhere.herokuapp.com';
     axios.get(`https://${proxy}/${urlFromInput}`)
@@ -166,6 +171,7 @@ const checkRssData = (urlFromInput, timerId, isRssListHasUrl = _.has(state.appro
     watchedState.processState = 'alreadyExists';
   }
 };
+
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   watchedState.processState = 'sending';
