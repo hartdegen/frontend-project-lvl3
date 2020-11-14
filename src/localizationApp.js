@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import resources from './locales';
+import resources from './locales.js';
 
 export default () => {
   i18next.init({
@@ -8,7 +8,6 @@ export default () => {
     resources,
   });
 
-  console.log(11111, resources);
   const formTitle = document.querySelector('.formTitle');
   formTitle.innerHTML = i18next.t('formTitle');
 
