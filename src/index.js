@@ -3,6 +3,8 @@ import './styles/styles.css';
 import _ from 'lodash';
 import axios from 'axios';
 import onChange from 'on-change';
+import i18next from 'i18next';
+import runLocalizationApp from './i18next.js';
 import isUrlValid from './urlCheking.js';
 
 const state = {
@@ -69,11 +71,11 @@ const processStateHandler = (processState) => {
   switch (processState) {
     case 'networkErorr':
       submitButton.disabled = false;
-      renderLoadingInfo('Network Error');
+      renderLoadingInfo(i18next.t('networkErrorMessage'));
       break;
     case 'alreadyExists':
       submitButton.disabled = false;
-      renderLoadingInfo('Rss already exists');
+      renderLoadingInfo(i18next.t('alreadyExistsMessage'));
       break;
     case 'filling':
       submitButton.disabled = false;
@@ -83,7 +85,7 @@ const processStateHandler = (processState) => {
       break;
     case 'finished':
       submitButton.disabled = false;
-      renderLoadingInfo('Rss has been loaded');
+      renderLoadingInfo(i18next.t('finishedMessage'));
       break;
     default:
       throw new Error(`Unknown state: ${processState}`);
@@ -183,3 +185,16 @@ form.addEventListener('submit', (e) => {
     setTimeout(() => checkRssData(urlFromInput), 1);
   }
 });
+
+runLocalizationApp();
+const formTitle = document.querySelector('.formTitle');
+formTitle.innerHTML = i18next.t('formTitle');
+
+const lead = document.querySelector('.lead');
+lead.innerHTML = i18next.t('lead');
+
+const button = document.querySelector('button');
+button.innerHTML = i18next.t('button');
+
+const exampleBlock = document.querySelector('.exampleBlock');
+exampleBlock.innerHTML = i18next.t('exampleBlock');
