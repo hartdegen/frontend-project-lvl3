@@ -1,12 +1,10 @@
 import _ from 'lodash';
 import axios from 'axios';
-import i18next from 'i18next';
-import onChange from 'on-change';
 import isUrlValid from './urlCheking.js';
+import watcher from './watcher.js';
 import runLocalizationApp from './localizationApp.js';
 
 const renderFeedsList = (feeds) => {
-  console.log(111, feeds);
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   h2.textContent = 'Feeds';
@@ -46,6 +44,12 @@ const renderPostsList = (posts) => {
   postsElement.innerHTML = div.innerHTML;
 };
 
+const renderLoadingStatus = (text) => {
+  document.querySelector('.loadingInfo').textContent = text;
+};
+
+const functionsOfRendering = { renderFeedsList, renderPostsList, renderLoadingStatus };
+
 const parseRssData = (dataObj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
@@ -76,73 +80,13 @@ export default () => {
     approvedRssList: {},
   };
 
-  const form = document.querySelector('form');
-  const input = form.querySelector('input');
-  const submitButton = form.querySelector('button');
-  const renderLoadingInfo = (text) => {
-    document.querySelector('.loadingInfo').textContent = text;
+  const elems = {
+    form: document.querySelector('form'),
+    input: document.querySelector('input'),
+    submitButton: document.querySelector('button'),
   };
 
-  const processStateHandler = (processState) => {
-    switch (processState) {
-      case 'networkErorr':
-        submitButton.disabled = false;
-        renderLoadingInfo(i18next.t('networkError'));
-        break;
-      case 'alreadyExists':
-        submitButton.disabled = false;
-        renderLoadingInfo(i18next.t('alreadyExists'));
-        break;
-      case 'filling':
-        submitButton.disabled = false;
-        break;
-      case 'sending':
-        submitButton.disabled = true;
-        break;
-      case 'finished':
-        submitButton.disabled = false;
-        renderLoadingInfo(i18next.t('finished'));
-        break;
-      default:
-        throw new Error(`Unknown state: ${processState}`);
-    }
-  };
-
-  const watchedState = onChange(state, (path, value) => {
-    const urlFromRssList = path.split('approvedRssList.')[1];
-    switch (path) {
-      case 'typedUrlValid':
-        if (value) {
-          submitButton.disabled = false;
-          input.style.border = null;
-        } else {
-          submitButton.disabled = false;
-          input.style.border = 'thick solid red';
-          renderLoadingInfo(i18next.t('notValid'));
-        }
-        break;
-
-      case `approvedRssList.${urlFromRssList}`:
-        if (!_.isEmpty(state.approvedRssList)) {
-          const feeds = _.values(state.approvedRssList);
-          const posts = _.keys(state.approvedRssList).reduce((acc, url) => {
-            const postsFromUrl = _.values(state.approvedRssList[url].posts);
-            return [...postsFromUrl, ...acc];
-          }, []);
-
-          renderFeedsList(feeds);
-          renderPostsList(posts);
-        }
-        break;
-
-      case 'processState':
-        processStateHandler(value);
-        break;
-
-      default:
-        throw new Error(`Unknown path: ${path}`);
-    }
-  });
+  const watchedState = watcher(state, elems, functionsOfRendering);
 
   const makeHttpRequestEvery5Secs = (urlFromInput, checkDataFunc, oldTimerId) => {
     const proxy = 'cors-anywhere.herokuapp.com';
@@ -169,18 +113,18 @@ export default () => {
   };
 
   // eslint-disable-next-line max-len
-  const checkRssData = (urlFromInput, oldTimerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
+  const checkForNewRssData = (urlFromInput, oldTimerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
     console.log('STATE BEGIN', state.processState);
 
     if (!isRssListHasUrl) {
-      makeHttpRequestEvery5Secs(urlFromInput, checkRssData, oldTimerId);
+      makeHttpRequestEvery5Secs(urlFromInput, checkForNewRssData, oldTimerId);
     } else {
       watchedState.typedUrlValid = true;
       watchedState.processState = 'alreadyExists';
     }
   };
 
-  form.addEventListener('submit', (e) => {
+  elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
     watchedState.processState = 'sending';
     const urlFromInput = e.target.querySelector('input').value;
@@ -188,7 +132,7 @@ export default () => {
       watchedState.typedUrlValid = false;
       watchedState.processState = 'filling';
     } else {
-      setTimeout(() => checkRssData(urlFromInput), 1);
+      setTimeout(() => checkForNewRssData(urlFromInput), 1);
     }
   });
 };
