@@ -1,5 +1,5 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './styles/styles.css';
 import runMainApp from './init.js';
-import runLocalizationApp from './localizationApp.js';
 
 runMainApp();
-runLocalizationApp();

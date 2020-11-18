@@ -6,5 +6,5 @@ const schema = yup.object().shape({
 
 export default (url) => schema
   .isValidSync({
-    website: `${url}`,
+    website: url,
   });
