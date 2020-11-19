@@ -2,28 +2,29 @@ import _ from 'lodash';
 import i18next from 'i18next';
 import onChange from 'on-change';
 
-export default (state, elems, functionsOfRendering) => {
+export default (state, elements, functionsOfRendering) => {
   const { renderFeedsList, renderPostsList, renderLoadingStatus } = functionsOfRendering;
-  const { input, submitButton } = elems;
+  const { input, submitButton } = elements;
 
-  const processStateHandler = (processState) => {
+  const processStateHandler = (processState, elems) => {
+    const submitBtn = elems.submitButton;
     switch (processState) {
       case 'networkErorr':
-        submitButton.disabled = false;
+        submitBtn.disabled = false;
         renderLoadingStatus(i18next.t('networkError'));
         break;
       case 'alreadyExists':
-        submitButton.disabled = false;
+        submitBtn.disabled = false;
         renderLoadingStatus(i18next.t('alreadyExists'));
         break;
       case 'filling':
-        submitButton.disabled = false;
+        submitBtn.disabled = false;
         break;
       case 'sending':
-        submitButton.disabled = true;
+        submitBtn.disabled = true;
         break;
       case 'finished':
-        submitButton.disabled = false;
+        submitBtn.disabled = false;
         renderLoadingStatus(i18next.t('finished'));
         break;
       default:
@@ -59,7 +60,7 @@ export default (state, elems, functionsOfRendering) => {
         break;
 
       case 'processState':
-        processStateHandler(value, submitButton);
+        processStateHandler(value, elements);
         break;
 
       default:

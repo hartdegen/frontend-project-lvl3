@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import axios from 'axios';
-import isUrlValid from './urlCheking.js';
+import isUrlValid from './isUrlValid.js';
 import watcher from './watcher.js';
 import runLocalizationApp from './localizationApp.js';
 
