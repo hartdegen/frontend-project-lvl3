@@ -46,24 +46,27 @@ const renderLoadingStatus = (text) => {
 
 export default (state, elements) => {
   const loadingStateHandler = (loadingState, elems) => {
-    const submitBtn = elems.submitButton;
+    const { input, submitButton } = elems;
+    submitButton.disabled = false;
+    input.style.border = null;
+
     switch (loadingState) {
-      case 'failed':
-        submitBtn.disabled = false;
-        renderLoadingStatus(i18next.t('networkError'));
-        break;
-      case 'alreadyExists':
-        submitBtn.disabled = false;
-        renderLoadingStatus(i18next.t('alreadyExists'));
-        break;
-      case 'default':
-        submitBtn.disabled = false;
+      case 'idle':
         break;
       case 'sending':
-        submitBtn.disabled = true;
+        submitButton.disabled = true;
+        break;
+      case 'urlNotValid':
+        input.style.border = 'thick solid red';
+        renderLoadingStatus(i18next.t('urlNotValid'));
+        break;
+      case 'failed':
+        renderLoadingStatus(i18next.t('failed'));
+        break;
+      case 'alreadyExists':
+        renderLoadingStatus(i18next.t('alreadyExists'));
         break;
       case 'succeed':
-        submitBtn.disabled = false;
         renderLoadingStatus(i18next.t('succeed'));
         break;
       default:
@@ -71,21 +74,9 @@ export default (state, elements) => {
     }
   };
 
-  const { input, submitButton } = elements;
   const watchedState = onChange(state, (path, value) => {
     const urlFromRssList = path.split('approvedRssList.')[1];
     switch (path) {
-      case 'typedUrlValid':
-        if (value) {
-          submitButton.disabled = false;
-          input.style.border = null;
-        } else {
-          submitButton.disabled = false;
-          input.style.border = 'thick solid red';
-          renderLoadingStatus(i18next.t('notValid'));
-        }
-        break;
-
       case `approvedRssList.${urlFromRssList}`:
         if (!_.isEmpty(state.approvedRssList)) {
           const feeds = _.values(state.approvedRssList);

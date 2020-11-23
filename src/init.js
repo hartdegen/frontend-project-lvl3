@@ -30,8 +30,12 @@ export default () => {
 
   const state = {
     loadingState: 'idle',
-    typedUrlValid: true,
     approvedRssList: {},
+    // rssData: {
+    //   urls: [],
+    //   feeds: [],
+    //   posts: [],
+    // },
   };
 
   const elems = {
@@ -42,7 +46,7 @@ export default () => {
 
   const watchedState = watcher(state, elems);
 
-  const makeRepeatingHttpRequest = (urlFromInput, checkDataFunc, oldTimerId) => {
+  const makeRepeatingHttpRequest = (urlFromInput, checkForNewRssData, oldTimerId) => {
     const proxy = 'cors-anywhere.herokuapp.com';
     let newTimerId;
     const timeOut = 5000;
@@ -50,7 +54,7 @@ export default () => {
     axios.get(`https://${proxy}/${urlFromInput}`)
       .then((obj) => {
         watchedState.approvedRssList[urlFromInput] = parseRssData(obj);
-        newTimerId = setTimeout(() => checkDataFunc(urlFromInput, newTimerId, false), timeOut);
+        newTimerId = setTimeout(() => checkForNewRssData(urlFromInput, newTimerId, false), timeOut);
       })
       .catch((error) => {
         watchedState.loadingState = 'failed';
@@ -60,7 +64,6 @@ export default () => {
       .finally(() => {
         if (state.loadingState === 'sending') {
           watchedState.loadingState = 'succeed';
-          watchedState.typedUrlValid = true;
         }
         console.log('STATE FINALLY -', state.loadingState, '- in', new Date().toLocaleTimeString());
       });
@@ -73,7 +76,6 @@ export default () => {
     if (!isRssListHasUrl) {
       makeRepeatingHttpRequest(urlFromInput, checkForNewRssData, oldTimerId);
     } else {
-      watchedState.typedUrlValid = true;
       watchedState.loadingState = 'alreadyExists';
     }
   };
@@ -82,9 +84,9 @@ export default () => {
     e.preventDefault();
     watchedState.loadingState = 'sending';
     const urlFromInput = e.target.querySelector('input').value;
+
     if (!isUrlValid(urlFromInput)) {
-      watchedState.typedUrlValid = false;
-      watchedState.loadingState = 'idle';
+      watchedState.loadingState = 'urlNotValid';
     } else {
       setTimeout(() => checkForNewRssData(urlFromInput), 1);
     }
