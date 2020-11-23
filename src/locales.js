@@ -7,7 +7,7 @@ export default {
       exampleBlock: 'Example: https://news.yandex.ru/auto.rss',
       networkError: 'Network Error',
       alreadyExists: 'Rss already exists',
-      finished: 'Rss has been loaded',
+      succeed: 'Rss has been loaded',
       notValid: 'Must be valid url',
     },
   },

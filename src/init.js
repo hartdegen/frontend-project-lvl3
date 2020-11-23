@@ -4,52 +4,6 @@ import isUrlValid from './isUrlValid.js';
 import watcher from './watcher.js';
 import runLocalizationApp from './localizationApp.js';
 
-const renderFeedsList = (feeds) => {
-  const div = document.createElement('div');
-  const h2 = document.createElement('h2');
-  h2.textContent = 'Feeds';
-  div.appendChild(h2);
-  const ul = document.createElement('ul');
-  feeds.forEach(({ title, description }) => {
-    const h3 = document.createElement('h3');
-    const p = document.createElement('p');
-    h3.textContent = title;
-    p.textContent = description;
-    const li = document.createElement('li');
-    li.appendChild(h3);
-    li.appendChild(p);
-    ul.prepend(li);
-  });
-  div.append(ul);
-  const feedsElement = document.querySelector('.feeds');
-  feedsElement.innerHTML = div.innerHTML;
-};
-
-const renderPostsList = (posts) => {
-  const div = document.createElement('div');
-  const h2 = document.createElement('h2');
-  const ul = document.createElement('ul');
-  h2.textContent = 'Posts';
-  div.appendChild(h2);
-  posts.forEach(({ title, link }) => {
-    const a = document.createElement('a');
-    a.href = link;
-    a.textContent = title;
-    const li = document.createElement('li');
-    li.appendChild(a);
-    ul.appendChild(li);
-  });
-  div.append(ul);
-  const postsElement = document.querySelector('.posts');
-  postsElement.innerHTML = div.innerHTML;
-};
-
-const renderLoadingStatus = (text) => {
-  document.querySelector('.loadingInfo').textContent = text;
-};
-
-const functionsOfRendering = { renderFeedsList, renderPostsList, renderLoadingStatus };
-
 const parseRssData = (dataObj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
@@ -75,8 +29,8 @@ export default () => {
   runLocalizationApp();
 
   const state = {
-    processState: 'valid',
-    typedUrlValid: null,
+    loadingState: 'idle',
+    typedUrlValid: true,
     approvedRssList: {},
   };
 
@@ -86,51 +40,51 @@ export default () => {
     submitButton: document.querySelector('button'),
   };
 
-  const watchedState = watcher(state, elems, functionsOfRendering);
+  const watchedState = watcher(state, elems);
 
-  const makeHttpRequestEvery5Secs = (urlFromInput, checkDataFunc, oldTimerId) => {
+  const makeRepeatingHttpRequest = (urlFromInput, checkDataFunc, oldTimerId) => {
     const proxy = 'cors-anywhere.herokuapp.com';
     let newTimerId;
+    const timeOut = 5000;
 
     axios.get(`https://${proxy}/${urlFromInput}`)
       .then((obj) => {
         watchedState.approvedRssList[urlFromInput] = parseRssData(obj);
-        newTimerId = setTimeout(() => checkDataFunc(urlFromInput, newTimerId, false), 5000);
+        newTimerId = setTimeout(() => checkDataFunc(urlFromInput, newTimerId, false), timeOut);
       })
       .catch((error) => {
-        console.log('ERRRRRRRR', error);
-        watchedState.processState = 'networkErorr';
+        watchedState.loadingState = 'failed';
         clearTimeout(oldTimerId);
+        console.log('ERRRRRRRR', error); throw error;
       })
       .finally(() => {
-        if (state.processState === 'sending') {
-          watchedState.processState = 'finished';
+        if (state.loadingState === 'sending') {
+          watchedState.loadingState = 'succeed';
           watchedState.typedUrlValid = true;
         }
-        console.log('STATE FINALLY -', state.processState, '- in', new Date().toLocaleTimeString());
-        console.log('------------------');
+        console.log('STATE FINALLY -', state.loadingState, '- in', new Date().toLocaleTimeString());
       });
   };
 
   // eslint-disable-next-line max-len
   const checkForNewRssData = (urlFromInput, oldTimerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
-    console.log('STATE BEGIN', state.processState);
+    console.log('STATE BEGIN', state.loadingState);
 
     if (!isRssListHasUrl) {
-      makeHttpRequestEvery5Secs(urlFromInput, checkForNewRssData, oldTimerId);
+      makeRepeatingHttpRequest(urlFromInput, checkForNewRssData, oldTimerId);
     } else {
       watchedState.typedUrlValid = true;
-      watchedState.processState = 'alreadyExists';
+      watchedState.loadingState = 'alreadyExists';
     }
   };
 
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    watchedState.processState = 'sending';
+    watchedState.loadingState = 'sending';
     const urlFromInput = e.target.querySelector('input').value;
     if (!isUrlValid(urlFromInput)) {
       watchedState.typedUrlValid = false;
-      watchedState.processState = 'filling';
+      watchedState.loadingState = 'idle';
     } else {
       setTimeout(() => checkForNewRssData(urlFromInput), 1);
     }

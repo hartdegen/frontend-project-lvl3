@@ -2,14 +2,53 @@ import _ from 'lodash';
 import i18next from 'i18next';
 import onChange from 'on-change';
 
-export default (state, elements, functionsOfRendering) => {
-  const { renderFeedsList, renderPostsList, renderLoadingStatus } = functionsOfRendering;
-  const { input, submitButton } = elements;
+const renderFeedsList = (feeds) => {
+  const div = document.createElement('div');
+  const h2 = document.createElement('h2');
+  h2.textContent = 'Feeds';
+  div.appendChild(h2);
+  const ul = document.createElement('ul');
+  feeds.forEach(({ title, description }) => {
+    const h3 = document.createElement('h3');
+    const p = document.createElement('p');
+    h3.textContent = title;
+    p.textContent = description;
+    const li = document.createElement('li');
+    li.appendChild(h3);
+    li.appendChild(p);
+    ul.prepend(li);
+  });
+  div.append(ul);
+  const feedsElement = document.querySelector('.feeds');
+  feedsElement.innerHTML = div.innerHTML;
+};
+const renderPostsList = (posts) => {
+  const div = document.createElement('div');
+  const h2 = document.createElement('h2');
+  const ul = document.createElement('ul');
+  h2.textContent = 'Posts';
+  div.appendChild(h2);
+  posts.forEach(({ title, link }) => {
+    const a = document.createElement('a');
+    a.href = link;
+    a.textContent = title;
+    const li = document.createElement('li');
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+  div.append(ul);
+  const postsElement = document.querySelector('.posts');
+  postsElement.innerHTML = div.innerHTML;
+};
+const renderLoadingStatus = (text) => {
+  document.querySelector('.loadingInfo').textContent = text;
+};
 
-  const processStateHandler = (processState, elems) => {
+export default (state, elements) => {
+  const loadingStateHandler = (loadingState, elems) => {
     const submitBtn = elems.submitButton;
-    switch (processState) {
-      case 'networkErorr':
+    switch (loadingState) {
+      case 'failed':
         submitBtn.disabled = false;
         renderLoadingStatus(i18next.t('networkError'));
         break;
@@ -17,21 +56,22 @@ export default (state, elements, functionsOfRendering) => {
         submitBtn.disabled = false;
         renderLoadingStatus(i18next.t('alreadyExists'));
         break;
-      case 'filling':
+      case 'default':
         submitBtn.disabled = false;
         break;
       case 'sending':
         submitBtn.disabled = true;
         break;
-      case 'finished':
+      case 'succeed':
         submitBtn.disabled = false;
-        renderLoadingStatus(i18next.t('finished'));
+        renderLoadingStatus(i18next.t('succeed'));
         break;
       default:
-        throw new Error(`Unknown state: ${processState}`);
+        throw new Error(`Unknown state: ${loadingState}`);
     }
   };
 
+  const { input, submitButton } = elements;
   const watchedState = onChange(state, (path, value) => {
     const urlFromRssList = path.split('approvedRssList.')[1];
     switch (path) {
@@ -59,8 +99,8 @@ export default (state, elements, functionsOfRendering) => {
         }
         break;
 
-      case 'processState':
-        processStateHandler(value, elements);
+      case 'loadingState':
+        loadingStateHandler(value, elements);
         break;
 
       default:
