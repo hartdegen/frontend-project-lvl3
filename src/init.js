@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import axios from 'axios';
 import watcher from './watcher.js';
+import isUrlValid from './isUrlValid.js';
 import runLocalizationApp from './localizationApp.js';
-import { isUrlValid, isRssListHasUrl } from './isUrlValid.js';
 
 const parseRssData = (dataObj) => {
   const parser = new DOMParser();
@@ -56,7 +56,7 @@ export default () => {
   const makeHttpRequests = (urlFromInput, oldUrls) => {
     const timeOut = 5000;
     const proxy = 'cors-anywhere.herokuapp.com';
-
+    let timerId;
     const newUrls = _.keys(state.approvedRssList);
     if (!_.isEqual(oldUrls, newUrls)) return;
 
@@ -72,8 +72,9 @@ export default () => {
         console.log('STATE FINALLY -', state.loadingState, '- in', new Date().toLocaleTimeString());
       })
       .catch((error) => {
+        clearTimeout(timerId);
         watchedState.loadingState = 'failed';
-        console.log('ERR CATCH 2', error); throw error;
+        console.log('ERR CATCH 322', error); throw error;
       });
   };
 
@@ -82,11 +83,10 @@ export default () => {
     watchedState.loadingState = 'loading';
     const url = e.target.querySelector('input').value;
     const urlsList = _.keys(state.approvedRssList);
+    const isValid = isUrlValid(url, urlsList);
 
-    if (!isUrlValid(url)) {
-      watchedState.loadingState = 'urlNotValid';
-    } else if (!isRssListHasUrl(url, urlsList)) {
-      watchedState.loadingState = 'alreadyExists';
+    if (!isValid.booleanValue) {
+      watchedState.loadingState = isValid.stateValue;
     } else {
       state.approvedRssList[url] = {};
       const urls = _.keys(state.approvedRssList);
