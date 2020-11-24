@@ -46,35 +46,41 @@ export default () => {
 
   const watchedState = watcher(state, elems);
 
-  const makeRepeatingHttpRequest = (urlFromInput, checkForNewRssData, oldTimerId) => {
+  const makeRepeatingHttpRequest = (urlFromInput, oldTimerId = null) => {
+    console.log(11111, oldTimerId);
+    clearTimeout(oldTimerId);
     const proxy = 'cors-anywhere.herokuapp.com';
-    let newTimerId;
     const timeOut = 5000;
+    let newTimerId;
+    state.approvedRssList[urlFromInput] = {};
+    const urls = _.keys(state.approvedRssList);
 
-    axios.get(`https://${proxy}/${urlFromInput}`)
-      .then((obj) => {
-        watchedState.approvedRssList[urlFromInput] = parseRssData(obj);
-        newTimerId = setTimeout(() => checkForNewRssData(urlFromInput, newTimerId, false), timeOut);
+    axios.all(urls.map((url) => axios.get(`https://${proxy}/${url}`)))
+      .then((results) => {
+        results.forEach((res, i) => { watchedState.approvedRssList[urls[i]] = parseRssData(res); });
       })
       .catch((error) => {
         watchedState.loadingState = 'failed';
-        clearTimeout(oldTimerId);
-        console.log('ERRRRRRRR', error); throw error;
+        console.log('ERR CATCH № 1', error); throw error;
       })
       .finally(() => {
+        newTimerId = setTimeout(() => makeRepeatingHttpRequest(urlFromInput, newTimerId), timeOut);
         if (state.loadingState === 'sending') {
           watchedState.loadingState = 'succeed';
         }
         console.log('STATE FINALLY -', state.loadingState, '- in', new Date().toLocaleTimeString());
+      })
+      .catch((error) => {
+        watchedState.loadingState = 'failed';
+        clearTimeout(newTimerId);
+        console.log('ERR CATCH № 2', error); throw error;
       });
   };
 
-  // eslint-disable-next-line max-len
-  const checkForNewRssData = (urlFromInput, oldTimerId, isRssListHasUrl = _.has(state.approvedRssList, urlFromInput)) => {
-    console.log('STATE BEGIN', state.loadingState);
-
+  const hasUrl = (url) => _.has(state.approvedRssList, url);
+  const checkRssData = (urlFromInput, isRssListHasUrl = hasUrl(urlFromInput)) => {
     if (!isRssListHasUrl) {
-      makeRepeatingHttpRequest(urlFromInput, checkForNewRssData, oldTimerId);
+      makeRepeatingHttpRequest(urlFromInput);
     } else {
       watchedState.loadingState = 'alreadyExists';
     }
@@ -84,11 +90,10 @@ export default () => {
     e.preventDefault();
     watchedState.loadingState = 'sending';
     const urlFromInput = e.target.querySelector('input').value;
-
     if (!isUrlValid(urlFromInput)) {
       watchedState.loadingState = 'urlNotValid';
     } else {
-      setTimeout(() => checkForNewRssData(urlFromInput), 1);
+      checkRssData(urlFromInput);
     }
   });
 };

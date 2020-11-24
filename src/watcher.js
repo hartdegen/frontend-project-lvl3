@@ -51,8 +51,6 @@ export default (state, elements) => {
     input.style.border = null;
 
     switch (loadingState) {
-      case 'idle':
-        break;
       case 'sending':
         submitButton.disabled = true;
         break;
@@ -60,11 +58,11 @@ export default (state, elements) => {
         input.style.border = 'thick solid red';
         renderLoadingStatus(i18next.t('urlNotValid'));
         break;
-      case 'failed':
-        renderLoadingStatus(i18next.t('failed'));
-        break;
       case 'alreadyExists':
         renderLoadingStatus(i18next.t('alreadyExists'));
+        break;
+      case 'failed':
+        renderLoadingStatus(i18next.t('failed'));
         break;
       case 'succeed':
         renderLoadingStatus(i18next.t('succeed'));
