@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import axios from 'axios';
-import isUrlValid from './isUrlValid.js';
 import watcher from './watcher.js';
 import runLocalizationApp from './localizationApp.js';
+import { isUrlValid, isRssListHasUrl } from './isUrlValid.js';
 
 const parseRssData = (dataObj) => {
   const parser = new DOMParser();
@@ -31,11 +31,18 @@ export default () => {
   const state = {
     loadingState: 'idle',
     approvedRssList: {},
-    // rssData: {
-    //   urls: [],
-    //   feeds: [],
-    //   posts: [],
-    // },
+    // при попытках нормализации данных возникало очень много ошибок по рендерингу, состояниям и тд
+    // если сейчас выстрою неверную структуру с ошибками в деталях, то перестройки обойдутся дорого
+    // ниже набросок, после проверки свяжусь по поводу спорных моментов, чтобы исправить
+    rssData: {
+      urls: ['url1', 'url2'],
+
+      feeds: [{ id: 'url1', description: '...', title: '...' },
+        { id: 'url2', description: '...', title: '...' }],
+
+      posts: [{ id: 'url1', posts: { date1: 'post1', date2: 'post2' } },
+        { id: 'url2', posts: { date1: 'post1', date2: 'post2' } }],
+    },
   };
 
   const elems = {
@@ -47,11 +54,10 @@ export default () => {
   const watchedState = watcher(state, elems);
 
   const makeRepeatingHttpRequest = (urlFromInput, oldTimerId = null) => {
-    console.log(11111, oldTimerId);
     clearTimeout(oldTimerId);
-    const proxy = 'cors-anywhere.herokuapp.com';
-    const timeOut = 5000;
     let newTimerId;
+    const timeOut = 5000;
+    const proxy = 'cors-anywhere.herokuapp.com';
     state.approvedRssList[urlFromInput] = {};
     const urls = _.keys(state.approvedRssList);
 
@@ -61,39 +67,31 @@ export default () => {
       })
       .catch((error) => {
         watchedState.loadingState = 'failed';
-        console.log('ERR CATCH № 1', error); throw error;
+        console.log('ERR CATCH', error); throw error;
       })
       .finally(() => {
         newTimerId = setTimeout(() => makeRepeatingHttpRequest(urlFromInput, newTimerId), timeOut);
-        if (state.loadingState === 'sending') {
-          watchedState.loadingState = 'succeed';
-        }
+        if (state.loadingState === 'sending') watchedState.loadingState = 'succeed';
         console.log('STATE FINALLY -', state.loadingState, '- in', new Date().toLocaleTimeString());
       })
       .catch((error) => {
         watchedState.loadingState = 'failed';
-        clearTimeout(newTimerId);
-        console.log('ERR CATCH № 2', error); throw error;
+        console.log('ERR CATCH', error); throw error;
       });
-  };
-
-  const hasUrl = (url) => _.has(state.approvedRssList, url);
-  const checkRssData = (urlFromInput, isRssListHasUrl = hasUrl(urlFromInput)) => {
-    if (!isRssListHasUrl) {
-      makeRepeatingHttpRequest(urlFromInput);
-    } else {
-      watchedState.loadingState = 'alreadyExists';
-    }
   };
 
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
     watchedState.loadingState = 'sending';
-    const urlFromInput = e.target.querySelector('input').value;
-    if (!isUrlValid(urlFromInput)) {
+    const url = e.target.querySelector('input').value;
+    const urlsList = _.keys(state.approvedRssList);
+
+    if (!isUrlValid(url)) {
       watchedState.loadingState = 'urlNotValid';
+    } else if (!isRssListHasUrl(url, urlsList)) {
+      watchedState.loadingState = 'alreadyExists';
     } else {
-      checkRssData(urlFromInput);
+      makeRepeatingHttpRequest(url);
     }
   });
 };
