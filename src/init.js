@@ -53,36 +53,33 @@ export default () => {
 
   const watchedState = watcher(state, elems);
 
-  const makeRepeatingHttpRequest = (urlFromInput, oldTimerId = null) => {
-    clearTimeout(oldTimerId);
-    let newTimerId;
+  const makeHttpRequests = (urlFromInput, oldUrls) => {
     const timeOut = 5000;
     const proxy = 'cors-anywhere.herokuapp.com';
-    state.approvedRssList[urlFromInput] = {};
-    const urls = _.keys(state.approvedRssList);
 
-    axios.all(urls.map((url) => axios.get(`https://${proxy}/${url}`)))
+    const newUrls = _.keys(state.approvedRssList);
+    if (!_.isEqual(oldUrls, newUrls)) return;
+
+    axios.all(newUrls.map((url) => axios.get(`https://${proxy}/${url}`)))
       .then((results) => {
-        results.forEach((res, i) => { watchedState.approvedRssList[urls[i]] = parseRssData(res); });
+        results.forEach((result, index) => {
+          watchedState.approvedRssList[newUrls[index]] = parseRssData(result);
+        });
       })
-      .catch((error) => {
-        watchedState.loadingState = 'failed';
-        console.log('ERR CATCH', error); throw error;
-      })
-      .finally(() => {
-        newTimerId = setTimeout(() => makeRepeatingHttpRequest(urlFromInput, newTimerId), timeOut);
-        if (state.loadingState === 'sending') watchedState.loadingState = 'succeed';
+      .then(() => {
+        setTimeout(() => makeHttpRequests(urlFromInput, newUrls), timeOut);
+        if (state.loadingState === 'loading') watchedState.loadingState = 'succeed';
         console.log('STATE FINALLY -', state.loadingState, '- in', new Date().toLocaleTimeString());
       })
       .catch((error) => {
         watchedState.loadingState = 'failed';
-        console.log('ERR CATCH', error); throw error;
+        console.log('ERR CATCH 2', error); throw error;
       });
   };
 
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    watchedState.loadingState = 'sending';
+    watchedState.loadingState = 'loading';
     const url = e.target.querySelector('input').value;
     const urlsList = _.keys(state.approvedRssList);
 
@@ -91,7 +88,9 @@ export default () => {
     } else if (!isRssListHasUrl(url, urlsList)) {
       watchedState.loadingState = 'alreadyExists';
     } else {
-      makeRepeatingHttpRequest(url);
+      state.approvedRssList[url] = {};
+      const urls = _.keys(state.approvedRssList);
+      makeHttpRequests(url, urls);
     }
   });
 };

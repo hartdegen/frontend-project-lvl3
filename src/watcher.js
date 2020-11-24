@@ -51,7 +51,7 @@ export default (state, elements) => {
     input.style.border = null;
 
     switch (loadingState) {
-      case 'sending':
+      case 'loading':
         submitButton.disabled = true;
         break;
       case 'urlNotValid':
