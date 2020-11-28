@@ -45,14 +45,14 @@ const renderLoadingStatus = (text) => {
 };
 
 export default (state, elements) => {
-  const loadingStateHandler = (loadingState, elems) => {
-    const { input, submitButton } = elems;
-    submitButton.disabled = false;
+  const loadingProcessHandler = (status, elems, watcher) => {
+    const watchedState = watcher;
+    const { input } = elems;
     input.style.border = null;
-
-    switch (loadingState) {
+    watchedState.form.status = 'filling';
+    switch (status) {
       case 'loading':
-        submitButton.disabled = true;
+        watchedState.form.status = 'blocked';
         break;
       case 'urlNotValid':
         input.style.border = 'thick solid red';
@@ -68,7 +68,22 @@ export default (state, elements) => {
         renderLoadingStatus(i18next.t('succeed'));
         break;
       default:
-        throw new Error(`Unknown state: ${loadingState}`);
+        throw new Error(`Unknown status: ${status}`);
+    }
+  };
+
+  const formHandler = (status, elems) => {
+    const { input, submitButton } = elems;
+    input.style.border = null;
+    switch (status) {
+      case 'filling':
+        submitButton.disabled = false;
+        break;
+      case 'blocked':
+        submitButton.disabled = true;
+        break;
+      default:
+        throw new Error(`Unknown status: ${status}`);
     }
   };
 
@@ -82,16 +97,17 @@ export default (state, elements) => {
             const postsFromUrl = _.values(state.approvedRssList[url].posts);
             return [...postsFromUrl, ...acc];
           }, []);
-
           renderFeedsList(feeds);
           renderPostsList(posts);
         }
         break;
 
-      case 'loadingState':
-        loadingStateHandler(value, elements);
+      case 'loadingProcess.status':
+        loadingProcessHandler(value, elements, watchedState);
         break;
-
+      case 'form.status':
+        formHandler(value, elements, watchedState);
+        break;
       default:
         throw new Error(`Unknown path: ${path}`);
     }
