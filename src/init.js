@@ -24,23 +24,30 @@ i18next.init({
 });
 
 const parseRssData = (dataObj) => {
+  const url = dataObj.headers['x-final-url'];
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
   const items = channel.querySelectorAll('item');
   const posts = {};
-
   items.forEach((el) => {
     const pubDate = Date.parse(el.querySelector('pubDate').textContent);
     const title = el.querySelector('title').textContent;
     const link = el.querySelector('link').textContent;
     posts[pubDate] = { title, link };
   });
-
+  const uniqId = _.uniqueId();
   return {
-    title: channel.querySelector('title').textContent,
-    description: channel.querySelector('description').textContent,
-    posts,
+    feeds: {
+      id: uniqId,
+      url,
+      title: channel.querySelector('title').textContent,
+      description: channel.querySelector('description').textContent,
+    },
+    posts: {
+      feedId: uniqId,
+      postsList: posts,
+    },
   };
 };
 
@@ -53,15 +60,8 @@ export default () => {
       status: 'filling',
     },
     approvedRssList: {},
-    rssData: {
-      urls: ['url1', 'url2'],
-
-      feeds: [{ id: 'url1', description: '...', title: '...' },
-        { id: 'url2', description: '...', title: '...' }],
-
-      posts: [{ id: 'url1', posts: { date1: 'post1', date2: 'post2' } },
-        { id: 'url2', posts: { date1: 'post1', date2: 'post2' } }],
-    },
+    feeds: [],
+    posts: [],
   };
 
   const elems = {
@@ -80,8 +80,12 @@ export default () => {
     if (!_.isEqual(oldUrls, newUrls)) return;
     axios.all(newUrls.map((url) => axios.get(`https://${proxy}/${url}`)))
       .then((results) => {
-        results.forEach((result, index) => {
-          watchedState.approvedRssList[newUrls[index]] = parseRssData(result);
+        state.feeds = [];
+        state.posts = [];
+        results.forEach((result) => {
+          const data = parseRssData(result);
+          watchedState.feeds = [...state.feeds, data.feeds];
+          watchedState.posts = [...state.posts, data.posts];
         });
       })
       .then(() => {

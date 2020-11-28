@@ -22,7 +22,11 @@ const renderFeedsList = (feeds) => {
   const feedsElement = document.querySelector('.feeds');
   feedsElement.innerHTML = div.innerHTML;
 };
-const renderPostsList = (posts) => {
+const renderPostsList = (rawPosts) => {
+  const posts = rawPosts.reduce((acc, val) => {
+    const postsFromUrl = _.values(val.postsList);
+    return [...postsFromUrl, ...acc];
+  }, []);
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   const ul = document.createElement('ul');
@@ -88,20 +92,13 @@ export default (state, elements) => {
   };
 
   const watchedState = onChange(state, (path, value) => {
-    const urlFromRssList = path.split('approvedRssList.')[1];
     switch (path) {
-      case `approvedRssList.${urlFromRssList}`:
-        if (!_.isEmpty(state.approvedRssList)) {
-          const feeds = _.values(state.approvedRssList);
-          const posts = _.keys(state.approvedRssList).reduce((acc, url) => {
-            const postsFromUrl = _.values(state.approvedRssList[url].posts);
-            return [...postsFromUrl, ...acc];
-          }, []);
-          renderFeedsList(feeds);
-          renderPostsList(posts);
-        }
+      case 'feeds':
+        renderFeedsList(value);
         break;
-
+      case 'posts':
+        renderPostsList(value);
+        break;
       case 'loadingProcess.status':
         loadingProcessHandler(value, elements, watchedState);
         break;
