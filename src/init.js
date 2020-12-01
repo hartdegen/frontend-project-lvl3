@@ -69,30 +69,31 @@ export default () => {
   };
   const watchedState = watcher(state, elems);
 
-  const makeHttpRequests = (urlFromInput, timeout, id = _.uniqueId()) => {
+  const makeHttpRequests = (urlFromInput, timeout, timerId = null, feedId = _.uniqueId()) => {
     if (!state.urls.includes(urlFromInput)) state.urls.push(urlFromInput);
     const proxy = 'cors-anywhere.herokuapp.com';
-    let timerId;
+    let timeId;
     const actualUrls = state.urls.map((url) => axios.get(`https://${proxy}/${url}`));
     const promise = Promise.all(actualUrls);
-    promise.catch((err) => { throw err; })
+    promise
+      .catch((err) => { throw err; })
       .then((urls) => {
-        const { feeds, posts } = state;
         urls.forEach((url, i) => {
-          const data = parseRssData(url, id);
-          console.log(111, data.posts);
-          console.log(222, state.posts[0]);
-          if (!_.isEqual(state.posts[i].postsList, data.posts.postsList)) {
-            console.log('!!!!!!! POSTS UPDATED');
-            state.posts[i].postsList = { ...data.posts.postsList, ...state.posts[i].postsList };
+          const data = parseRssData(url, feedId);
+          if (_.isEmpty(state.posts[i])) {
+            state.posts[i] = data.posts;
+            state.feeds[i] = data.feeds;
+          } else if (!_.isEqual(state.posts[i], data.posts)) {
+            state.posts[i].postsList = { ...state.posts[i].postsList, ...data.posts.postsList };
           }
         });
-        watchedState.feeds = [feeds];
-        watchedState.posts = [posts];
-        console.log(999, state);
       })
       .then(() => {
-        setTimeout(() => makeHttpRequests(urlFromInput, timeout, id), timeout);
+        watchedState.feeds = [...state.feeds];
+        watchedState.posts = [...state.posts];
+      })
+      .then(() => {
+        timeId = setTimeout(() => makeHttpRequests(urlFromInput, timeout, timeId, feedId), timeout);
         watchedState.loadingProcess.status = 'succeed';
         console.log('STATE FINALLY -', state.loadingProcess, '- in', new Date().toLocaleTimeString());
       })
@@ -105,12 +106,10 @@ export default () => {
 
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    watchedState.loadingProcess.status = 'loading';
     const url = e.target.querySelector('input').value;
-    e.target.querySelector('input').value = '';
+    watchedState.loadingProcess.status = 'loading';
     const listOfLoadedUrls = state.urls;
     const isValid = isUrlValid(url, listOfLoadedUrls);
-
     if (!isValid.booleanValue) {
       watchedState.loadingProcess.status = isValid.stateValue;
     } else {

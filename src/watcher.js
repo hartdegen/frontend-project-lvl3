@@ -57,6 +57,7 @@ export default (state, elements) => {
     switch (status) {
       case 'loading':
         watchedState.form.status = 'blocked';
+        input.value = '';
         break;
       case 'urlNotValid':
         input.style.border = 'thick solid red';
