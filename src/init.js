@@ -23,7 +23,7 @@ i18next.init({
   throw err;
 });
 
-const parseRssData = (dataObj) => {
+const parseRssData = (dataObj, id) => {
   const url = dataObj.headers['x-final-url'];
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
@@ -36,16 +36,15 @@ const parseRssData = (dataObj) => {
     const link = el.querySelector('link').textContent;
     posts[pubDate] = { title, link };
   });
-  const uniqId = _.uniqueId();
   return {
     feeds: {
-      id: uniqId,
+      id,
       url,
       title: channel.querySelector('title').textContent,
       description: channel.querySelector('description').textContent,
     },
     posts: {
-      feedId: uniqId,
+      feedId: id,
       postsList: posts,
     },
   };
@@ -59,38 +58,42 @@ export default () => {
     form: {
       status: 'filling',
     },
-    approvedRssList: {},
+    urls: [],
     feeds: [],
     posts: [],
   };
-
   const elems = {
     form: document.querySelector('form'),
     input: document.querySelector('input'),
     submitButton: document.querySelector('button'),
   };
-
   const watchedState = watcher(state, elems);
 
-  const makeHttpRequests = (urlFromInput, oldUrls) => {
-    const timeOut = 5000;
+  const makeHttpRequests = (urlFromInput, timeout, id = _.uniqueId()) => {
+    if (!state.urls.includes(urlFromInput)) state.urls.push(urlFromInput);
     const proxy = 'cors-anywhere.herokuapp.com';
     let timerId;
-    const newUrls = _.keys(state.approvedRssList);
-    if (!_.isEqual(oldUrls, newUrls)) return;
-    axios.all(newUrls.map((url) => axios.get(`https://${proxy}/${url}`)))
-      .then((results) => {
-        state.feeds = [];
-        state.posts = [];
-        results.forEach((result) => {
-          const data = parseRssData(result);
-          watchedState.feeds = [...state.feeds, data.feeds];
-          watchedState.posts = [...state.posts, data.posts];
+    const actualUrls = state.urls.map((url) => axios.get(`https://${proxy}/${url}`));
+    const promise = Promise.all(actualUrls);
+    promise.catch((err) => { throw err; })
+      .then((urls) => {
+        const { feeds, posts } = state;
+        urls.forEach((url, i) => {
+          const data = parseRssData(url, id);
+          console.log(111, data.posts);
+          console.log(222, state.posts[0]);
+          if (!_.isEqual(state.posts[i].postsList, data.posts.postsList)) {
+            console.log('!!!!!!! POSTS UPDATED');
+            state.posts[i].postsList = { ...data.posts.postsList, ...state.posts[i].postsList };
+          }
         });
+        watchedState.feeds = [feeds];
+        watchedState.posts = [posts];
+        console.log(999, state);
       })
       .then(() => {
-        setTimeout(() => makeHttpRequests(urlFromInput, newUrls), timeOut);
-        if (state.loadingProcess.status === 'loading') watchedState.loadingProcess.status = 'succeed';
+        setTimeout(() => makeHttpRequests(urlFromInput, timeout, id), timeout);
+        watchedState.loadingProcess.status = 'succeed';
         console.log('STATE FINALLY -', state.loadingProcess, '- in', new Date().toLocaleTimeString());
       })
       .catch((error) => {
@@ -104,15 +107,14 @@ export default () => {
     e.preventDefault();
     watchedState.loadingProcess.status = 'loading';
     const url = e.target.querySelector('input').value;
-    const urlsList = _.keys(state.approvedRssList);
-    const isValid = isUrlValid(url, urlsList);
+    e.target.querySelector('input').value = '';
+    const listOfLoadedUrls = state.urls;
+    const isValid = isUrlValid(url, listOfLoadedUrls);
 
     if (!isValid.booleanValue) {
       watchedState.loadingProcess.status = isValid.stateValue;
     } else {
-      state.approvedRssList[url] = {};
-      const urls = _.keys(state.approvedRssList);
-      makeHttpRequests(url, urls);
+      makeHttpRequests(url, 5000);
     }
   });
 };
