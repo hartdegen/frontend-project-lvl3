@@ -58,7 +58,7 @@ export default () => {
     form: {
       status: 'filling',
     },
-    urls: [],
+    loadedUrls: [],
     feeds: [],
     posts: [],
   };
@@ -70,13 +70,13 @@ export default () => {
   const watchedState = watcher(state, elems);
 
   const makeHttpRequests = (urlFromInput, timeout, timerId = null, feedId = _.uniqueId()) => {
-    if (!state.urls.includes(urlFromInput)) state.urls.push(urlFromInput);
+    if (!state.loadedUrls.includes(urlFromInput)) state.loadedUrls.push(urlFromInput);
     const proxy = 'cors-anywhere.herokuapp.com';
     let timeId;
-    const actualUrls = state.urls.map((url) => axios.get(`https://${proxy}/${url}`));
+
+    const actualUrls = state.loadedUrls.map((url) => axios.get(`https://${proxy}/${url}`));
     const promise = Promise.all(actualUrls);
-    promise
-      .catch((err) => { throw err; })
+    promise.catch((err) => { throw err; })
       .then((urls) => {
         urls.forEach((url, i) => {
           const data = parseRssData(url, feedId);
@@ -100,7 +100,7 @@ export default () => {
       .catch((error) => {
         clearTimeout(timerId);
         watchedState.loadingProcess.status = 'failed';
-        console.log('ERR CATCH 322', error); throw error;
+        console.log('ERR CATCH', error);
       });
   };
 
@@ -108,7 +108,7 @@ export default () => {
     e.preventDefault();
     const url = e.target.querySelector('input').value;
     watchedState.loadingProcess.status = 'loading';
-    const listOfLoadedUrls = state.urls;
+    const listOfLoadedUrls = state.loadedUrls;
     const isValid = isUrlValid(url, listOfLoadedUrls);
     if (!isValid.booleanValue) {
       watchedState.loadingProcess.status = isValid.stateValue;
