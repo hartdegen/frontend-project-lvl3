@@ -54,9 +54,11 @@ export default () => {
   const state = {
     loadingProcess: {
       status: 'idle',
+      error: null,
     },
     form: {
       status: 'filling',
+      error: null,
     },
     loadedUrls: [],
     feeds: [],
@@ -69,10 +71,10 @@ export default () => {
   };
   const watchedState = watcher(state, elems);
 
-  const makeHttpRequests = (urlFromInput, timeout, timerId = null, feedId = _.uniqueId()) => {
+  const makeHttpRequests = (urlFromInput, timeout, feedId = _.uniqueId()) => {
     if (!state.loadedUrls.includes(urlFromInput)) state.loadedUrls.push(urlFromInput);
     const proxy = 'cors-anywhere.herokuapp.com';
-    let timeId;
+    let timerId;
 
     const actualUrls = state.loadedUrls.map((url) => axios.get(`https://${proxy}/${url}`));
     const promise = Promise.all(actualUrls);
@@ -93,13 +95,10 @@ export default () => {
         watchedState.posts = [...state.posts];
       })
       .then(() => {
-        timeId = setTimeout(() => makeHttpRequests(urlFromInput, timeout, timeId, feedId), timeout);
-        watchedState.loadingProcess.status = 'succeed';
-        console.log('STATE FINALLY -', state.loadingProcess, '- in', new Date().toLocaleTimeString());
+        timerId = setTimeout(() => makeHttpRequests(urlFromInput, timeout, feedId), timeout);
       })
       .catch((error) => {
         clearTimeout(timerId);
-        watchedState.loadingProcess.status = 'failed';
         console.log('ERR CATCH', error);
       });
   };
@@ -107,13 +106,21 @@ export default () => {
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = e.target.querySelector('input').value;
-    watchedState.loadingProcess.status = 'loading';
+    watchedState.form.status = 'loading';
     const listOfLoadedUrls = state.loadedUrls;
     const isValid = isUrlValid(url, listOfLoadedUrls);
+
     if (!isValid.booleanValue) {
-      watchedState.loadingProcess.status = isValid.stateValue;
-    } else {
+      watchedState.form.status = isValid.stateValue;
+      watchedState.form.error = isValid.errorValue;
+    }
+
+    try {
       makeHttpRequests(url, 5000);
+      watchedState.form.status = 'succeed';
+    } catch (err) {
+      watchedState.form.status = 'failed';
+      throw err;
     }
   });
 };

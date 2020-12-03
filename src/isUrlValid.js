@@ -19,12 +19,14 @@ export default (url, list) => {
     return {
       stateValue: 'urlNotValid',
       booleanValue: false,
+      errorValue: 'Must be valid url',
     };
   }
   if (!isListHasUrl(url, list)) {
     return {
       stateValue: 'alreadyExists',
       booleanValue: false,
+      errorValue: 'Rss already exists',
     };
   }
   return {

@@ -50,42 +50,56 @@ const renderLoadingStatus = (text) => {
 
 export default (state, elements) => {
   const loadingProcessHandler = (status, elems, watcher) => {
-    const watchedState = watcher;
-    const { input } = elems;
-    input.style.border = null;
-    watchedState.form.status = 'filling';
-    switch (status) {
-      case 'loading':
-        watchedState.form.status = 'blocked';
-        input.value = '';
-        break;
-      case 'urlNotValid':
-        input.style.border = 'thick solid red';
-        renderLoadingStatus(i18next.t('urlNotValid'));
-        break;
-      case 'alreadyExists':
-        renderLoadingStatus(i18next.t('alreadyExists'));
-        break;
-      case 'failed':
-        renderLoadingStatus(i18next.t('failed'));
-        break;
-      case 'succeed':
-        renderLoadingStatus(i18next.t('succeed'));
-        break;
-      default:
-        throw new Error(`Unknown status: ${status}`);
-    }
+    // const watchedState = watcher;
+    // const { input } = elems;
+    // input.style.border = null;
+    // watchedState.form.status = 'filling';
+    // switch (status) {
+    //   case 'loading':
+    //     watchedState.form.status = 'blocked';
+    //     input.value = '';
+    //     break;
+    //   case 'urlNotValid':
+    //     input.style.border = 'thick solid red';
+    //     renderLoadingStatus(i18next.t('urlNotValid'));
+    //     break;
+    //   case 'alreadyExists':
+    //     renderLoadingStatus(i18next.t('alreadyExists'));
+    //     break;
+    //   case 'failed':
+    //     renderLoadingStatus(i18next.t('failed'));
+    //     break;
+    //   case 'succeed':
+    //     renderLoadingStatus(i18next.t('succeed'));
+    //     break;
+    //   default:
+    //     throw new Error(`Unknown status: ${status}`);
+    // }
   };
 
   const formHandler = (status, elems) => {
     const { input, submitButton } = elems;
     input.style.border = null;
     switch (status) {
-      case 'filling':
-        submitButton.disabled = false;
-        break;
-      case 'blocked':
+      case 'loading':
         submitButton.disabled = true;
+        break;
+      case 'urlNotValid':
+        submitButton.disabled = false;
+        input.style.border = 'thick solid red';
+        renderLoadingStatus(i18next.t('urlNotValid'));
+        break;
+      case 'alreadyExists':
+        submitButton.disabled = false;
+        renderLoadingStatus(i18next.t('alreadyExists'));
+        break;
+      case 'failed':
+        submitButton.disabled = false;
+        renderLoadingStatus(i18next.t('failed'));
+        break;
+      case 'succeed':
+        submitButton.disabled = false;
+        renderLoadingStatus(i18next.t('succeed'));
         break;
       default:
         throw new Error(`Unknown status: ${status}`);
@@ -101,11 +115,13 @@ export default (state, elements) => {
         renderPostsList(value);
         break;
       case 'loadingProcess.status':
-        loadingProcessHandler(value, elements, watchedState);
+        loadingProcessHandler(value, elements);
         break;
       case 'form.status':
-        formHandler(value, elements, watchedState);
+        formHandler(value, elements);
         break;
+      case 'form.error':
+        throw new Error(`Form Error: ${value}`);
       default:
         throw new Error(`Unknown path: ${path}`);
     }
