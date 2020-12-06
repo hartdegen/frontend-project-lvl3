@@ -1,9 +1,9 @@
 import _ from 'lodash';
-import axios from 'axios';
+// import axios from 'axios';
 import i18next from 'i18next';
 import resources from './locales.js';
 import watcher from './watcher.js';
-import isUrlValid from './isUrlValid.js';
+import checkValidity from './isUrlValid.js';
 
 i18next.init({
   lng: 'en',
@@ -24,9 +24,9 @@ i18next.init({
 });
 
 const parseRssData = (dataObj, id) => {
-  const url = dataObj.headers['x-final-url'];
+  const { url } = dataObj.status;
   const parser = new DOMParser();
-  const rssDataDocument = parser.parseFromString(dataObj.data, 'text/xml');
+  const rssDataDocument = parser.parseFromString(dataObj.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
   const items = channel.querySelectorAll('item');
   const posts = {};
@@ -45,9 +45,46 @@ const parseRssData = (dataObj, id) => {
     },
     posts: {
       feedId: id,
-      postsList: posts,
+      byDate: posts,
     },
   };
+};
+
+const downloadNewsfeed = (urls) => {
+  const promises = urls.map((url) => fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
+    .then((response) => {
+      if (response.ok) return response.json();
+      throw new Error('Network response was not ok.');
+    }));
+  return Promise.all(promises).catch((err) => { throw err; })
+    .then((data) => data.map((obj, i) => parseRssData(obj, i)));
+};
+
+const allFeedsPosts = [];
+const updatePosts = (promise, initialState) => {
+  const watchedState = initialState;
+  promise.then((news) => {
+    news.forEach((feedPost, i) => {
+      allFeedsPosts[i] = { ...allFeedsPosts[i], ...feedPost };
+    });
+    console.log('ALL POSTS', allFeedsPosts);
+    watchedState.feeds = [...allFeedsPosts.map((x) => x.feeds)];
+    watchedState.posts = [...allFeedsPosts.map((x) => x.posts)];
+  });
+};
+//   .then(() => {
+//     timerId = setTimeout(() => updatePosts(urlFromInput, timeout, feedId), timeout);
+//   })
+//   .catch((error) => {
+//     clearTimeout(timerId);
+//     console.log('ERR CATCH', error);
+//   });
+
+const renderNews = (url, watchedState) => {
+  const urls = allFeedsPosts.reduce((acc, post) => [...acc, post.feeds.url], [url]);
+  console.log('URLS', urls);
+  const promise = downloadNewsfeed(urls);
+  updatePosts(promise, watchedState);
 };
 
 export default () => {
@@ -60,7 +97,7 @@ export default () => {
       status: 'filling',
       error: null,
     },
-    loadedUrls: [],
+    urls: [],
     feeds: [],
     posts: [],
   };
@@ -71,53 +108,14 @@ export default () => {
   };
   const watchedState = watcher(state, elems);
 
-  const makeHttpRequests = (urlFromInput, timeout, feedId = _.uniqueId()) => {
-    if (!state.loadedUrls.includes(urlFromInput)) state.loadedUrls.push(urlFromInput);
-    const proxy = 'cors-anywhere.herokuapp.com';
-    let timerId;
-
-    const actualUrls = state.loadedUrls.map((url) => axios.get(`https://${proxy}/${url}`));
-    const promise = Promise.all(actualUrls);
-    promise.catch((err) => { throw err; })
-      .then((urls) => {
-        urls.forEach((url, i) => {
-          const data = parseRssData(url, feedId);
-          if (_.isEmpty(state.posts[i])) {
-            state.posts[i] = data.posts;
-            state.feeds[i] = data.feeds;
-          } else if (!_.isEqual(state.posts[i], data.posts)) {
-            state.posts[i].postsList = { ...state.posts[i].postsList, ...data.posts.postsList };
-          }
-        });
-      })
-      .then(() => {
-        watchedState.feeds = [...state.feeds];
-        watchedState.posts = [...state.posts];
-      })
-      .then(() => {
-        timerId = setTimeout(() => makeHttpRequests(urlFromInput, timeout, feedId), timeout);
-      })
-      .catch((error) => {
-        clearTimeout(timerId);
-        console.log('ERR CATCH', error);
-      });
-  };
-
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = e.target.querySelector('input').value;
-    watchedState.form.status = 'loading';
-    const listOfLoadedUrls = state.loadedUrls;
-    const isValid = isUrlValid(url, listOfLoadedUrls);
-
-    if (!isValid.booleanValue) {
-      watchedState.form.status = isValid.stateValue;
-      watchedState.form.error = isValid.errorValue;
-    }
+    // watchedState.form.status = 'loading';
+    checkValidity(url, watchedState);
 
     try {
-      makeHttpRequests(url, 5000);
-      watchedState.form.status = 'succeed';
+      renderNews(url, watchedState);
     } catch (err) {
       watchedState.form.status = 'failed';
       throw err;

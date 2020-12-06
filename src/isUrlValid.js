@@ -9,27 +9,13 @@ const isUrlValid = (url) => {
   });
 };
 
-const isListHasUrl = (url, list) => {
-  const schema2 = yup.mixed().notOneOf(list);
-  return schema2.isValidSync(url);
-};
-
-export default (url, list) => {
+export default (url, watcher) => {
+  const watchedState = watcher;
+  const { urls } = watchedState;
   if (!isUrlValid(url)) {
-    return {
-      stateValue: 'urlNotValid',
-      booleanValue: false,
-      errorValue: 'Must be valid url',
-    };
+    watchedState.form.status = 'urlNotValid';
   }
-  if (!isListHasUrl(url, list)) {
-    return {
-      stateValue: 'alreadyExists',
-      booleanValue: false,
-      errorValue: 'Rss already exists',
-    };
+  if (urls.includes(url)) {
+    watchedState.form.status = 'alreadyExists';
   }
-  return {
-    booleanValue: true,
-  };
 };

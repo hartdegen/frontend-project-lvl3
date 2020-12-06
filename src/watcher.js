@@ -22,9 +22,10 @@ const renderFeedsList = (feeds) => {
   const feedsElement = document.querySelector('.feeds');
   feedsElement.innerHTML = div.innerHTML;
 };
+
 const renderPostsList = (rawPosts) => {
   const posts = rawPosts.reduce((acc, val) => {
-    const postsFromUrl = _.values(val.postsList);
+    const postsFromUrl = _.values(val.byDate);
     return [...postsFromUrl, ...acc];
   }, []);
   const div = document.createElement('div');
@@ -50,31 +51,16 @@ const renderLoadingStatus = (text) => {
 
 export default (state, elements) => {
   const loadingProcessHandler = (status, elems, watcher) => {
-    // const watchedState = watcher;
-    // const { input } = elems;
-    // input.style.border = null;
-    // watchedState.form.status = 'filling';
-    // switch (status) {
-    //   case 'loading':
-    //     watchedState.form.status = 'blocked';
-    //     input.value = '';
-    //     break;
-    //   case 'urlNotValid':
-    //     input.style.border = 'thick solid red';
-    //     renderLoadingStatus(i18next.t('urlNotValid'));
-    //     break;
-    //   case 'alreadyExists':
-    //     renderLoadingStatus(i18next.t('alreadyExists'));
-    //     break;
-    //   case 'failed':
-    //     renderLoadingStatus(i18next.t('failed'));
-    //     break;
-    //   case 'succeed':
-    //     renderLoadingStatus(i18next.t('succeed'));
-    //     break;
-    //   default:
-    //     throw new Error(`Unknown status: ${status}`);
-    // }
+    switch (status) {
+      case 'loading':
+        break;
+      case 'failed':
+        break;
+      case 'succeed':
+        break;
+      default:
+        throw new Error(`Unknown status: ${status}`);
+    }
   };
 
   const formHandler = (status, elems) => {
@@ -114,6 +100,12 @@ export default (state, elements) => {
       case 'posts':
         renderPostsList(value);
         break;
+      // case String(path.match(/feeds\.\d/)):
+      //   renderFeedsList(value);
+      //   break;
+      // case String(path.match(/posts\.\d/)):
+      //   renderPostsList(value);
+      //   break;
       case 'loadingProcess.status':
         loadingProcessHandler(value, elements);
         break;
