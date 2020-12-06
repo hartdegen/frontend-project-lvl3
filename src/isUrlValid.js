@@ -9,13 +9,15 @@ const isUrlValid = (url) => {
   });
 };
 
-export default (url, watcher) => {
+export default (url, fullUrlsList, watcher) => {
   const watchedState = watcher;
-  const { urls } = watchedState;
   if (!isUrlValid(url)) {
     watchedState.form.status = 'urlNotValid';
+    return false;
   }
-  if (urls.includes(url)) {
+  if (fullUrlsList.includes(url)) {
     watchedState.form.status = 'alreadyExists';
+    return false;
   }
+  return true;
 };

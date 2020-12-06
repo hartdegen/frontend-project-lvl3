@@ -19,7 +19,7 @@ const renderFeedsList = (feeds) => {
     ul.prepend(li);
   });
   div.append(ul);
-  const feedsElement = document.querySelector('.feeds');
+  const feedsElement = document.querySelector('div.feeds');
   feedsElement.innerHTML = div.innerHTML;
 };
 
@@ -42,11 +42,11 @@ const renderPostsList = (rawPosts) => {
     ul.appendChild(li);
   });
   div.append(ul);
-  const postsElement = document.querySelector('.posts');
+  const postsElement = document.querySelector('div.posts');
   postsElement.innerHTML = div.innerHTML;
 };
 const renderLoadingStatus = (text) => {
-  document.querySelector('.loadingInfo').textContent = text;
+  document.querySelector('div.loadingInfo').textContent = text;
 };
 
 export default (state, elements) => {
@@ -100,20 +100,16 @@ export default (state, elements) => {
       case 'posts':
         renderPostsList(value);
         break;
-      // case String(path.match(/feeds\.\d/)):
-      //   renderFeedsList(value);
-      //   break;
-      // case String(path.match(/posts\.\d/)):
-      //   renderPostsList(value);
-      //   break;
       case 'loadingProcess.status':
         loadingProcessHandler(value, elements);
         break;
       case 'form.status':
         formHandler(value, elements);
         break;
+      case 'loadingProcess.error':
+        throw new Error(`Loading Process: ${value}`);
       case 'form.error':
-        throw new Error(`Form Error: ${value}`);
+        throw new Error(`Form: ${value}`);
       default:
         throw new Error(`Unknown path: ${path}`);
     }
