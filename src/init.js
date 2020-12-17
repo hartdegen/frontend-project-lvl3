@@ -32,47 +32,47 @@ const parseRssData = (obj) => {
 
 const fetchFeeds = (urls, initialState) => {
   const watchedState = initialState;
+  watchedState.loadingProcess.status = 'loading';
   const proxy = 'cors-anywhere.herokuapp.com';
-  const promises = urls.map((url) => axios.get(`https://${proxy}/${url}`)
+  const rawFeeds = urls.map((url) => axios.get(`https://${proxy}/${url}`)
     .catch((err) => {
-      // тестовый консол.лог лично для меня
-      console.log('CHECK 111 PROMISE ERROR');
+      console.log('111 GET RAW FEEDS WITH axios.get PROBLEMS');
       watchedState.loadingProcess.error = err;
     }));
-  return Promise.all(promises)
-    .then((data) => data.map((obj, index) => {
-      const newFeedData = parseRssData(obj);
-      newFeedData.feed.id = index;
-      newFeedData.posts.feedId = index;
-      return newFeedData;
-    }))
-    .catch(() => {
-      // тестовый консол.лог лично для меня
-      console.log('CHECK 222 PROMISE ERROR');
-    });
+  return Promise.all(rawFeeds).then((feeds) => feeds.map((obj, index) => {
+    const newFeedData = parseRssData(obj);
+    newFeedData.feed.id = index;
+    newFeedData.posts.feedId = index;
+    return newFeedData;
+  })).catch((err) => {
+    console.log('222 DATA CANT BE PARSED');
+    watchedState.loadingProcess.error = err;
+  });
 };
 
-const updateNews = (promise, initialState, allFeedsPosts) => {
-  const data = allFeedsPosts;
+const updateNews = (feeds, initialState, allFeedsPostsWarehouse) => {
+  console.log('tries to update', new Date().toLocaleTimeString());
+  const data = allFeedsPostsWarehouse;
   const watchedState = initialState;
-  promise.then((news) => {
-    news.forEach((feedWithPosts, i) => {
+  const promise = Promise.resolve();
+  return promise.then(() => {
+    feeds.forEach((feedWithPosts, i) => {
       if (!data[i]) {
         data[i] = feedWithPosts;
         watchedState.feeds = [...data.map((value) => value.feed)];
-        watchedState.loadingProcess.status = 'succeed';
       } else {
         const { posts } = data[i];
-        const prevPosts = _.keyBy(posts.byDate, 'pubDate');
+        const alreadyExistingPosts = _.keyBy(posts.byDate, 'pubDate');
         const newPosts = _.keyBy(feedWithPosts.posts.byDate, 'pubDate');
-        const allPosts = _.values({ ...prevPosts, ...newPosts });
+        const allPosts = _.values({ ...alreadyExistingPosts, ...newPosts });
         posts.byDate = allPosts;
       }
     });
     watchedState.posts = [...data.map((value) => value.posts)];
+    watchedState.loadingProcess.status = 'succeed';
   }).catch((err) => {
-    watchedState.loadingProcess.status = 'failed';
-    watchedState.form.error = err;
+    console.log('333 updateNews ERROR');
+    console.log(err);
   });
 };
 
@@ -111,21 +111,19 @@ export default () => i18next.init({
   };
 
   let timerId;
-  const allFeedsPosts = [];
+  const allFeedsPostsWarehouse = [];
   const watchedState = watcher(state, elems);
   const showNews = (urls, initialState, timeOut) => {
     const promise = Promise.resolve();
-    promise.then(() => {
-      console.log('tries to update', new Date().toLocaleTimeString());
-      const feeds = fetchFeeds(urls, initialState);
-      updateNews(feeds, initialState, allFeedsPosts);
-    }).then(() => { timerId = setTimeout(() => showNews(urls, initialState, timeOut), timeOut); });
+    promise.then(() => fetchFeeds(urls, watchedState))
+      .then((feeds) => updateNews(feeds, initialState, allFeedsPostsWarehouse))
+      .then(() => { timerId = setTimeout(() => showNews(urls, initialState, timeOut), timeOut); });
   };
 
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = e.target.querySelector('input').value;
-    const urlList = allFeedsPosts.reduce((acc, val) => [...acc, val.feed.url], []);
+    const urlList = allFeedsPostsWarehouse.reduce((acc, val) => [...acc, val.feed.url], []);
     const actualUrls = [...urlList, url];
 
     if (!isValid(url)) {
@@ -135,7 +133,7 @@ export default () => i18next.init({
       watchedState.form.status = 'alreadyExists'; return;
     }
     watchedState.timerId = timerId;
-    watchedState.loadingProcess.status = 'loading';
+    watchedState.form.status = 'submit';
 
     showNews(actualUrls, watchedState, 10000);
   });

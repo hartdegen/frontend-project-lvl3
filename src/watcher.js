@@ -1,4 +1,4 @@
-import _ from 'lodash';
+// import _ from 'lodash';
 import i18next from 'i18next';
 import onChange from 'on-change';
 
@@ -46,11 +46,6 @@ const renderPostsList = (rawPosts, elem) => {
   postsElement.innerHTML = div.innerHTML;
 };
 
-const renderLoadingStatus = (text, elem) => {
-  const loadingElemenet = elem;
-  loadingElemenet.textContent = text;
-};
-
 export default (state, elems) => {
   const loadingProcessHandler = (status, timerId, initialState) => {
     const watchedState = initialState;
@@ -75,25 +70,27 @@ export default (state, elems) => {
     const { loadingElem, input, submitButton } = elems;
     input.style.border = null;
     switch (status) {
-      case 'loading':
+      case 'submit':
         submitButton.disabled = true;
+        break;
+      case 'loading':
         break;
       case 'urlNotValid':
         submitButton.disabled = false;
         input.style.border = 'thick solid red';
-        renderLoadingStatus(i18next.t('urlNotValid'), loadingElem);
+        loadingElem.textContent = i18next.t('urlNotValid');
         break;
       case 'alreadyExists':
         submitButton.disabled = false;
-        renderLoadingStatus(i18next.t('alreadyExists'), loadingElem);
+        loadingElem.textContent = i18next.t('alreadyExists');
         break;
       case 'failed':
         submitButton.disabled = false;
-        renderLoadingStatus(i18next.t('failed'), loadingElem);
+        loadingElem.textContent = i18next.t('failed');
         break;
       case 'succeed':
         submitButton.disabled = false;
-        renderLoadingStatus(i18next.t('succeed'), loadingElem);
+        loadingElem.textContent = i18next.t('succeed');
         break;
       default:
         throw new Error(`Unknown status: ${status}`);
@@ -119,9 +116,12 @@ export default (state, elems) => {
         formHandler(value);
         break;
       case 'loadingProcess.error':
-        throw new Error(`Loading Process: ${value}`);
+        break;
+        // throw new Error(`Loading Process: ${value}`);
       case 'form.error':
-        throw new Error(`Form: ${value}`);
+        formHandler('urlNotValid');
+        break;
+        // throw new Error(`Form: ${value}`);
       default:
         throw new Error(`Unknown path: ${path}`);
     }
