@@ -25,7 +25,7 @@ const parseRssData = (obj) => {
       description: channel.querySelector('description').textContent,
     },
     posts: {
-      byDate: posts,
+      list: posts,
     },
   };
 };
@@ -37,6 +37,7 @@ const fetchFeeds = (urls, initialState) => {
   const rawFeeds = urls.map((url) => axios.get(`https://${proxy}/${url}`)
     .catch((err) => {
       console.log('111 GET RAW FEEDS WITH axios.get PROBLEMS');
+      watchedState.loadingProcess.status = 'failed';
       watchedState.loadingProcess.error = err;
     }));
   return Promise.all(rawFeeds).then((feeds) => feeds.map((obj, index) => {
@@ -46,13 +47,14 @@ const fetchFeeds = (urls, initialState) => {
     return newFeedData;
   })).catch((err) => {
     console.log('222 DATA CANT BE PARSED');
+    watchedState.loadingProcess.status = 'failed';
     watchedState.loadingProcess.error = err;
   });
 };
 
-const updateNews = (feeds, initialState, allFeedsPostsWarehouse) => {
+const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => {
   console.log('tries to update', new Date().toLocaleTimeString());
-  const data = allFeedsPostsWarehouse;
+  const data = allExistingFeedsPostsFromWarehouse;
   const watchedState = initialState;
   const promise = Promise.resolve();
   return promise.then(() => {
@@ -62,17 +64,20 @@ const updateNews = (feeds, initialState, allFeedsPostsWarehouse) => {
         watchedState.feeds = [...data.map((value) => value.feed)];
       } else {
         const { posts } = data[i];
-        const alreadyExistingPosts = _.keyBy(posts.byDate, 'pubDate');
-        const newPosts = _.keyBy(feedWithPosts.posts.byDate, 'pubDate');
-        const allPosts = _.values({ ...alreadyExistingPosts, ...newPosts });
-        posts.byDate = allPosts;
+        const existingTitles = posts.list.map((post) => post.title);
+        const newPostsThatNotIncludedInWarehouse = feedWithPosts.posts.list.filter((post) => {
+          const newPosts = !existingTitles.includes(post.title);
+          return newPosts;
+        });
+        posts.list.push(...newPostsThatNotIncludedInWarehouse);
       }
     });
     watchedState.posts = [...data.map((value) => value.posts)];
     watchedState.loadingProcess.status = 'succeed';
   }).catch((err) => {
     console.log('333 updateNews ERROR');
-    console.log(err);
+    watchedState.loadingProcess.status = 'failed';
+    watchedState.loadingProcess.error = err;
   });
 };
 
@@ -80,6 +85,9 @@ export default () => i18next.init({
   lng: 'en',
   debug: true,
   resources,
+}).catch((err) => {
+  console.log('something went wrong loading');
+  throw err;
 }).then(() => {
   const formTitle = document.querySelector('.formTitle');
   formTitle.innerHTML = i18next.t('formTitle');
@@ -89,9 +97,6 @@ export default () => i18next.init({
   button.innerHTML = i18next.t('button');
   const exampleBlock = document.querySelector('.exampleBlock');
   exampleBlock.innerHTML = i18next.t('exampleBlock');
-}).catch((err) => {
-  console.log('something went wrong loading');
-  throw err;
 }).then(() => {
   const state = {
     loadingProcess: { status: 'idle', error: null },
@@ -123,13 +128,13 @@ export default () => i18next.init({
   elems.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = e.target.querySelector('input').value;
-    const urlList = allFeedsPostsWarehouse.reduce((acc, val) => [...acc, val.feed.url], []);
-    const actualUrls = [...urlList, url];
+    const urlsList = allFeedsPostsWarehouse.map((val) => val.feed.url);
+    const actualUrls = [...urlsList, url];
 
     if (!isValid(url)) {
       watchedState.form.status = 'urlNotValid'; return;
     }
-    if (!isIncluded(url, urlList)) {
+    if (!isIncluded(url, urlsList)) {
       watchedState.form.status = 'alreadyExists'; return;
     }
     watchedState.timerId = timerId;

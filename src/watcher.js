@@ -26,7 +26,7 @@ const renderFeedsList = (feeds, elem) => {
 const renderPostsList = (rawPosts, elem) => {
   const postsElement = elem;
   const posts = rawPosts.reduce((acc, val) => {
-    const postsFromUrl = val.byDate;
+    const postsFromUrl = val.list;
     return [...postsFromUrl, ...acc];
   }, []);
   const div = document.createElement('div');
