@@ -1,14 +1,13 @@
-import _ from 'lodash';
 import axios from 'axios';
 import i18next from 'i18next';
 import resources from './locales.js';
 import watcher from './watcher.js';
-import { isValid, isIncluded } from './isUrlValid.js';
+import isNotValid from './validation.js';
 
 const parseRssData = (obj) => {
-  const url = obj.headers['x-final-url'];
+  const { url } = obj.data.status;
   const parser = new DOMParser();
-  const rssDataDocument = parser.parseFromString(obj.data, 'text/xml');
+  const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
   const items = channel.querySelectorAll('item');
   const posts = [];
@@ -33,10 +32,9 @@ const parseRssData = (obj) => {
 const fetchFeeds = (urls, initialState) => {
   const watchedState = initialState;
   watchedState.loadingProcess.status = 'loading';
-  const proxy = 'cors-anywhere.herokuapp.com';
-  const rawFeeds = urls.map((url) => axios.get(`https://${proxy}/${url}`)
+  const proxy = 'https://api.allorigins.win/get?url=';
+  const rawFeeds = urls.map((url) => axios.get(`${proxy}${url}`)
     .catch((err) => {
-      console.log('111 GET RAW FEEDS WITH axios.get PROBLEMS');
       watchedState.loadingProcess.status = 'failed';
       watchedState.loadingProcess.error = err;
     }));
@@ -45,11 +43,7 @@ const fetchFeeds = (urls, initialState) => {
     newFeedData.feed.id = index;
     newFeedData.posts.feedId = index;
     return newFeedData;
-  })).catch((err) => {
-    console.log('222 DATA CANT BE PARSED');
-    watchedState.loadingProcess.status = 'failed';
-    watchedState.loadingProcess.error = err;
-  });
+  }));
 };
 
 const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => {
@@ -58,24 +52,20 @@ const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => 
   const watchedState = initialState;
   const promise = Promise.resolve();
   return promise.then(() => {
-    feeds.forEach((feedWithPosts, i) => {
+    feeds.forEach((feed, i) => {
       if (!data[i]) {
-        data[i] = feedWithPosts;
+        data[i] = feed;
         watchedState.feeds = [...data.map((value) => value.feed)];
       } else {
         const { posts } = data[i];
         const existingTitles = posts.list.map((post) => post.title);
-        const newPostsThatNotIncludedInWarehouse = feedWithPosts.posts.list.filter((post) => {
-          const newPosts = !existingTitles.includes(post.title);
-          return newPosts;
-        });
-        posts.list.push(...newPostsThatNotIncludedInWarehouse);
+        const newPosts = feed.posts.list.filter((post) => !existingTitles.includes(post.title));
+        posts.list.push(...newPosts);
       }
     });
     watchedState.posts = [...data.map((value) => value.posts)];
     watchedState.loadingProcess.status = 'succeed';
   }).catch((err) => {
-    console.log('333 updateNews ERROR');
     watchedState.loadingProcess.status = 'failed';
     watchedState.loadingProcess.error = err;
   });
@@ -130,16 +120,9 @@ export default () => i18next.init({
     const url = e.target.querySelector('input').value;
     const urlsList = allFeedsPostsWarehouse.map((val) => val.feed.url);
     const actualUrls = [...urlsList, url];
-
-    if (!isValid(url)) {
-      watchedState.form.status = 'urlNotValid'; return;
-    }
-    if (!isIncluded(url, urlsList)) {
-      watchedState.form.status = 'alreadyExists'; return;
-    }
+    if (isNotValid(url, urlsList, watchedState)) return;
     watchedState.timerId = timerId;
-    watchedState.form.status = 'submit';
-
+    watchedState.form.status = 'submited';
     showNews(actualUrls, watchedState, 10000);
   });
 });

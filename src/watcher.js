@@ -1,9 +1,8 @@
-// import _ from 'lodash';
 import i18next from 'i18next';
 import onChange from 'on-change';
 
-const renderFeedsList = (feeds, elem) => {
-  const feedElement = elem;
+const renderFeeds = (feeds, container) => {
+  const parentElement = container;
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   h2.textContent = 'Feeds';
@@ -20,15 +19,15 @@ const renderFeedsList = (feeds, elem) => {
     ul.prepend(li);
   });
   div.append(ul);
-  feedElement.innerHTML = div.innerHTML;
+  parentElement.innerHTML = div.innerHTML;
 };
 
-const renderPostsList = (rawPosts, elem) => {
-  const postsElement = elem;
-  const posts = rawPosts.reduce((acc, val) => {
+const renderPosts = (rawPosts, container) => {
+  const parentElement = container;
+  const posts = rawPosts.map((val) => {
     const postsFromUrl = val.list;
-    return [...postsFromUrl, ...acc];
-  }, []);
+    return postsFromUrl;
+  }).flat();
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   const ul = document.createElement('ul');
@@ -43,7 +42,7 @@ const renderPostsList = (rawPosts, elem) => {
     ul.appendChild(li);
   });
   div.append(ul);
-  postsElement.innerHTML = div.innerHTML;
+  parentElement.innerHTML = div.innerHTML;
 };
 
 export default (state, elems) => {
@@ -70,7 +69,7 @@ export default (state, elems) => {
     const { loadingElem, input, submitButton } = elems;
     input.style.border = null;
     switch (status) {
-      case 'submit':
+      case 'submited':
         submitButton.disabled = true;
         break;
       case 'loading':
@@ -86,7 +85,7 @@ export default (state, elems) => {
         break;
       case 'failed':
         submitButton.disabled = false;
-        loadingElem.textContent = i18next.t('failed');
+        // loadingElem.textContent = i18next.t('failed');
         break;
       case 'succeed':
         submitButton.disabled = false;
@@ -102,26 +101,24 @@ export default (state, elems) => {
     const { feedsElem, postsElem } = elems;
     switch (path) {
       case 'feeds':
-        renderFeedsList(value, feedsElem);
+        renderFeeds(value, feedsElem);
         break;
       case 'posts':
-        renderPostsList(value, postsElem);
+        renderPosts(value, postsElem);
         break;
       case 'timerId':
         break;
       case 'loadingProcess.status':
         loadingProcessHandler(value, timerId, watchedState);
         break;
+      case 'loadingProcess.error':
+        break;
       case 'form.status':
         formHandler(value);
         break;
-      case 'loadingProcess.error':
-        break;
-        // throw new Error(`Loading Process: ${value}`);
       case 'form.error':
-        formHandler('urlNotValid');
+        formHandler(value);
         break;
-        // throw new Error(`Form: ${value}`);
       default:
         throw new Error(`Unknown path: ${path}`);
     }
