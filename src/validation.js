@@ -11,15 +11,15 @@ export default (url, list, initialState) => {
   const isValidUrlAsRss = schema3.isValidSync(url);
 
   if (!isUrlNotIncludedInList) {
-    watchedState.form.status = 'alreadyExists';
+    watchedState.form.errors.push('alreadyExists');
     return true;
   }
   if (!isValidUrl) {
-    watchedState.form.status = 'urlNotValid';
+    watchedState.form.errors.push('urlNotValid');
     return true;
   }
   if (!isValidUrlAsRss) {
-    watchedState.form.status = 'urlNotValidAsRss';
+    watchedState.form.errors.push('urlNotValidAsRss');
     return true;
   }
   return false;

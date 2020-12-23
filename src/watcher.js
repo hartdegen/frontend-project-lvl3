@@ -49,9 +49,6 @@ export default (state, elems) => {
   const loadingProcessHandler = (status, timerId, initialState) => {
     const watchedState = initialState;
     switch (status) {
-      case 'noConnection':
-        watchedState.form.status = 'noConnection';
-        break;
       case 'loading':
         clearTimeout(timerId);
         break;
@@ -70,12 +67,13 @@ export default (state, elems) => {
     const { loadingElem, input, submitButton } = elems;
     input.style.border = null;
     switch (status) {
-      case 'noConnection':
-        loadingElem.textContent = i18next.t('noConnection');
-        loadingElem.style.color = 'Red';
-        break;
       case 'submited':
         submitButton.disabled = true;
+        break;
+      case 'noConnection':
+        submitButton.disabled = false;
+        loadingElem.textContent = i18next.t('noConnection');
+        loadingElem.style.color = 'Red';
         break;
       case 'urlNotValid':
         submitButton.disabled = false;
@@ -93,13 +91,13 @@ export default (state, elems) => {
         loadingElem.textContent = i18next.t('alreadyExists');
         loadingElem.style.color = 'Red';
         break;
-      case 'failed':
-        submitButton.disabled = false;
-        break;
       case 'succeed':
         submitButton.disabled = false;
         loadingElem.textContent = i18next.t('succeed');
         loadingElem.style.color = 'Green';
+        break;
+      case 'failed':
+        submitButton.disabled = false;
         break;
       default:
         throw new Error(`Unknown status: ${status}`);
@@ -125,6 +123,9 @@ export default (state, elems) => {
         break;
       case 'form.status':
         formHandler(value);
+        break;
+      case 'form.errors':
+        formHandler(value[value.length - 1]);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);

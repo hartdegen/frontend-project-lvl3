@@ -31,7 +31,6 @@ const parseRssData = (obj) => {
 
 const fetchFeeds = (urls, initialState) => {
   console.log('TRY GET FEEDS', new Date().toLocaleTimeString());
-
   const watchedState = initialState;
   watchedState.loadingProcess.status = 'loading';
   const proxy = 'https://api.allorigins.win/get?url=';
@@ -70,7 +69,6 @@ const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => 
       }
     });
     watchedState.posts = [...data.map((value) => value.posts)];
-    watchedState.loadingProcess.status = 'succeed';
   }).catch((e) => {
     console.log(33333, 'UPDATING PROBLEM', e);
     watchedState.loadingProcess.status = 'failed';
@@ -97,7 +95,7 @@ export default () => i18next.init({
 }).then(() => {
   const state = {
     loadingProcess: { status: 'idle', errors: [] },
-    form: { status: 'filling' },
+    form: { status: 'filling', errors: [] },
     timerId: null,
     feeds: [],
     posts: [],
@@ -117,7 +115,7 @@ export default () => i18next.init({
   const watchedState = watcher(state, elems);
   const showNews = (urls, initialState, timeOut) => {
     const promise = Promise.resolve();
-    promise.then(() => fetchFeeds(urls, watchedState))
+    return promise.then(() => fetchFeeds(urls, watchedState))
       .then((feeds) => updateNews(feeds, initialState, allFeedsPostsWarehouse))
       .finally(() => {
         timerId = setTimeout(() => showNews(urls, initialState, timeOut), timeOut);
@@ -131,11 +129,18 @@ export default () => i18next.init({
     const actualUrls = [...urlsList, url];
     if (isNotValid(url, urlsList, watchedState)) return;
     if (!navigator.onLine) {
-      watchedState.loadingProcess.status = 'noConnection';
+      watchedState.form.error = 'noConnection';
       return;
     }
     watchedState.timerId = timerId;
     watchedState.form.status = 'submited';
-    showNews(actualUrls, watchedState, 10000);
+    showNews(actualUrls, watchedState, 10000)
+      .then(() => {
+        watchedState.loadingProcess.status = 'succeed';
+      })
+      .catch((err) => {
+        watchedState.loadingProcess.status = 'failed';
+        watchedState.loadingProcess.errors.push(err);
+      });
   });
 });
