@@ -5,10 +5,11 @@ export default {
       lead: 'Start reading RSS today! It is easy, it is nicely.',
       button: 'Add',
       exampleBlock: 'Example: https://news.yandex.ru/auto.rss',
-      failed: 'Network Error',
+      noConnection: 'Network Error',
       alreadyExists: 'Rss already exists',
       succeed: 'Rss has been loaded',
       urlNotValid: 'Must be valid url',
+      urlNotValidAsRss: 'This source does not contain valid rss',
     },
   },
 };

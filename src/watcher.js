@@ -49,13 +49,14 @@ export default (state, elems) => {
   const loadingProcessHandler = (status, timerId, initialState) => {
     const watchedState = initialState;
     switch (status) {
+      case 'noConnection':
+        watchedState.form.status = 'noConnection';
+        break;
       case 'loading':
-        watchedState.form.status = 'loading';
         clearTimeout(timerId);
         break;
       case 'failed':
-        watchedState.form.status = 'loading';
-        clearTimeout(timerId);
+        watchedState.form.status = 'failed';
         break;
       case 'succeed':
         watchedState.form.status = 'succeed';
@@ -69,27 +70,36 @@ export default (state, elems) => {
     const { loadingElem, input, submitButton } = elems;
     input.style.border = null;
     switch (status) {
+      case 'noConnection':
+        loadingElem.textContent = i18next.t('noConnection');
+        loadingElem.style.color = 'Red';
+        break;
       case 'submited':
         submitButton.disabled = true;
-        break;
-      case 'loading':
         break;
       case 'urlNotValid':
         submitButton.disabled = false;
         input.style.border = 'thick solid red';
         loadingElem.textContent = i18next.t('urlNotValid');
+        loadingElem.style.color = 'Red';
+        break;
+      case 'urlNotValidAsRss':
+        submitButton.disabled = false;
+        loadingElem.textContent = i18next.t('urlNotValidAsRss');
+        loadingElem.style.color = 'Red';
         break;
       case 'alreadyExists':
         submitButton.disabled = false;
         loadingElem.textContent = i18next.t('alreadyExists');
+        loadingElem.style.color = 'Red';
         break;
       case 'failed':
         submitButton.disabled = false;
-        // loadingElem.textContent = i18next.t('failed');
         break;
       case 'succeed':
         submitButton.disabled = false;
         loadingElem.textContent = i18next.t('succeed');
+        loadingElem.style.color = 'Green';
         break;
       default:
         throw new Error(`Unknown status: ${status}`);
@@ -111,12 +121,9 @@ export default (state, elems) => {
       case 'loadingProcess.status':
         loadingProcessHandler(value, timerId, watchedState);
         break;
-      case 'loadingProcess.error':
+      case 'loadingProcess.errors':
         break;
       case 'form.status':
-        formHandler(value);
-        break;
-      case 'form.error':
         formHandler(value);
         break;
       default:
