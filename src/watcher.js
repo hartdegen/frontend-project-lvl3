@@ -24,10 +24,7 @@ const renderFeeds = (feeds, container) => {
 
 const renderPosts = (rawPosts, container) => {
   const parentElement = container;
-  const posts = rawPosts.map((val) => {
-    const postsFromUrl = val.list;
-    return postsFromUrl;
-  }).flat();
+  const posts = rawPosts.map((value) => value.list).flat();
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   const ul = document.createElement('ul');
@@ -53,7 +50,7 @@ export default (state, elems) => {
         clearTimeout(timerId);
         break;
       case 'failed':
-        watchedState.form.status = 'failed';
+        watchedState.form.status = 'filling';
         break;
       case 'succeed':
         watchedState.form.status = 'succeed';
@@ -96,7 +93,7 @@ export default (state, elems) => {
         loadingElem.textContent = i18next.t('succeed');
         loadingElem.style.color = 'Green';
         break;
-      case 'failed':
+      case 'filling':
         submitButton.disabled = false;
         break;
       default:
@@ -119,10 +116,10 @@ export default (state, elems) => {
       case 'loadingProcess.status':
         loadingProcessHandler(value, timerId, watchedState);
         break;
-      case 'loadingProcess.errors':
-        break;
       case 'form.status':
         formHandler(value);
+        break;
+      case 'loadingProcess.errors':
         break;
       case 'form.errors':
         formHandler(value[value.length - 1]);
