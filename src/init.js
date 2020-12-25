@@ -33,9 +33,13 @@ const fetchFeeds = (urls, initialState) => {
   console.log('TRY TO GET FEEDS', new Date().toLocaleTimeString());
   const watchedState = initialState;
   watchedState.loadingProcess.status = 'loading';
+  console.log(watchedState.loadingProcess);
   const proxy = 'https://api.allorigins.win/get?url=';
   const rawFeeds = urls.map((url) => axios.get(`${proxy}${url}`)
-    .catch((e) => { watchedState.loadingProcess.errors.push(e); }));
+    .catch((e) => {
+      watchedState.loadingProcess.status = 'failed';
+      watchedState.loadingProcess.errors.push(e);
+    }));
   return Promise.all(rawFeeds)
     .then((feeds) => feeds.map((obj, index) => {
       const newFeedData = parseRssData(obj);
@@ -43,7 +47,10 @@ const fetchFeeds = (urls, initialState) => {
       newFeedData.posts.feedId = index;
       return newFeedData;
     }))
-    .catch((e) => { watchedState.loadingProcess.errors.push(e); });
+    .catch((e) => {
+      watchedState.loadingProcess.status = 'failed';
+      watchedState.loadingProcess.errors.push(e);
+    });
 };
 
 const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => {
@@ -61,12 +68,18 @@ const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => 
           const { posts } = data[i];
           const existingTitles = posts.list.map((post) => post.title);
           const newPosts = feed.posts.list.filter((post) => !existingTitles.includes(post.title));
-          posts.list.push(...newPosts);
-          watchedState.posts = [...data.map((value) => value.posts)];
+          if (newPosts.length > 0) {
+            posts.list.push(...newPosts);
+            watchedState.posts = [...data.map((value) => value.posts)];
+          }
         }
       });
+      watchedState.loadingProcess.status = 'succeed';
     })
-    .catch((e) => { watchedState.loadingProcess.errors.push(e); });
+    .catch((e) => {
+      watchedState.loadingProcess.status = 'failed';
+      watchedState.loadingProcess.errors.push(e);
+    });
 };
 
 const checkOnlineStatus = () => { if (!navigator.onLine) throw new Error('noConnection'); };
@@ -125,10 +138,7 @@ export default () => i18next
         .then(() => checkValidation(url, urlsList))
         .then(() => checkOnlineStatus())
         .then(() => showNews(actualUrls, watchedState, 5000))
-        .then(() => {
-          watchedState.loadingProcess.status = 'succeed';
-          watchedState.form.status = 'succeed';
-        })
+        .then(() => { watchedState.form.status = 'succeed'; })
         .catch((err) => {
           watchedState.loadingProcess.status = 'failed';
           watchedState.form.errors.push(err.message);
