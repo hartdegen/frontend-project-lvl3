@@ -43,17 +43,14 @@ const renderPosts = (rawPosts, container) => {
 };
 
 export default (state, elems) => {
-  const loadingProcessHandler = (status, timerId, initialState) => {
-    const watchedState = initialState;
+  const loadingProcessHandler = (status, timerId) => {
     switch (status) {
       case 'loading':
         clearTimeout(timerId);
         break;
       case 'failed':
-        watchedState.form.status = 'filling';
         break;
       case 'succeed':
-        watchedState.form.status = 'succeed';
         break;
       default:
         throw new Error(`Unknown status: ${status}`);
@@ -62,34 +59,29 @@ export default (state, elems) => {
 
   const formHandler = (status) => {
     const { loadingElem, input, submitButton } = elems;
-    input.style.border = null;
     switch (status) {
       case 'submited':
         submitButton.disabled = true;
+        input.style.border = null;
         break;
       case 'noConnection':
-        submitButton.disabled = false;
         loadingElem.textContent = i18next.t('noConnection');
         loadingElem.style.color = 'Red';
         break;
       case 'urlNotValid':
-        submitButton.disabled = false;
-        input.style.border = 'thick solid red';
         loadingElem.textContent = i18next.t('urlNotValid');
         loadingElem.style.color = 'Red';
+        input.style.border = 'thick solid red';
         break;
       case 'urlNotValidAsRss':
-        submitButton.disabled = false;
         loadingElem.textContent = i18next.t('urlNotValidAsRss');
         loadingElem.style.color = 'Red';
         break;
       case 'alreadyExists':
-        submitButton.disabled = false;
         loadingElem.textContent = i18next.t('alreadyExists');
         loadingElem.style.color = 'Red';
         break;
       case 'succeed':
-        submitButton.disabled = false;
         loadingElem.textContent = i18next.t('succeed');
         loadingElem.style.color = 'Green';
         break;
@@ -114,7 +106,7 @@ export default (state, elems) => {
       case 'timerId':
         break;
       case 'loadingProcess.status':
-        loadingProcessHandler(value, timerId, watchedState);
+        loadingProcessHandler(value, timerId);
         break;
       case 'form.status':
         formHandler(value);
