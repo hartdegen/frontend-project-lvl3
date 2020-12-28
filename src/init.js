@@ -78,8 +78,7 @@ const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => 
         }
       });
       watchedState.loadingProcess.status = 'succeed';
-    })
-    .catch((e) => {
+    }).catch((e) => {
       watchedState.loadingProcess.status = 'failed';
       watchedState.loadingProcess.error = e;
     });
@@ -87,7 +86,7 @@ const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => 
 
 export default () => i18next
   .init({
-    lng: 'e',
+    lng: 'en',
     debug: true,
     resources,
   })

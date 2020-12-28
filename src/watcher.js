@@ -59,34 +59,29 @@ export default (state, elems) => {
 
   const formHandler = (status) => {
     const { loadingElem, input, submitButton } = elems;
+    const caseHandler = (statusCase, styleColor, styleBorder = null) => {
+      loadingElem.textContent = i18next.t(statusCase);
+      loadingElem.style.color = styleColor;
+      input.style.border = styleBorder;
+    };
     switch (status) {
       case 'submited':
         submitButton.disabled = true;
         break;
       case 'noConnection':
-        loadingElem.textContent = i18next.t('noConnection');
-        loadingElem.style.color = 'Red';
-        input.style.border = null;
+        caseHandler('noConnection', 'Red');
         break;
       case 'urlNotValid':
-        loadingElem.textContent = i18next.t('urlNotValid');
-        loadingElem.style.color = 'Red';
-        input.style.border = 'thick solid red';
+        caseHandler('urlNotValid', 'Red', 'thick solid red');
         break;
       case 'urlNotValidAsRss':
-        loadingElem.textContent = i18next.t('urlNotValidAsRss');
-        loadingElem.style.color = 'Red';
-        input.style.border = null;
+        caseHandler('urlNotValidAsRss', 'Red');
         break;
       case 'alreadyExists':
-        loadingElem.textContent = i18next.t('alreadyExists');
-        loadingElem.style.color = 'Red';
-        input.style.border = null;
+        caseHandler('alreadyExists', 'Red');
         break;
       case 'succeed':
-        loadingElem.textContent = i18next.t('succeed');
-        loadingElem.style.color = 'Green';
-        input.style.border = null;
+        caseHandler('succeed', 'Green');
         break;
       case 'filling':
         submitButton.disabled = false;
@@ -117,8 +112,7 @@ export default (state, elems) => {
       case 'loadingProcess.error':
         break;
       case 'form.error':
-        formHandler(value);
-        form.error = null;
+        formHandler(value); form.error = null;
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
