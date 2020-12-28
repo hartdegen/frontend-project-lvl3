@@ -62,11 +62,11 @@ export default (state, elems) => {
     switch (status) {
       case 'submited':
         submitButton.disabled = true;
-        input.style.border = null;
         break;
       case 'noConnection':
         loadingElem.textContent = i18next.t('noConnection');
         loadingElem.style.color = 'Red';
+        input.style.border = null;
         break;
       case 'urlNotValid':
         loadingElem.textContent = i18next.t('urlNotValid');
@@ -76,14 +76,17 @@ export default (state, elems) => {
       case 'urlNotValidAsRss':
         loadingElem.textContent = i18next.t('urlNotValidAsRss');
         loadingElem.style.color = 'Red';
+        input.style.border = null;
         break;
       case 'alreadyExists':
         loadingElem.textContent = i18next.t('alreadyExists');
         loadingElem.style.color = 'Red';
+        input.style.border = null;
         break;
       case 'succeed':
         loadingElem.textContent = i18next.t('succeed');
         loadingElem.style.color = 'Green';
+        input.style.border = null;
         break;
       case 'filling':
         submitButton.disabled = false;
@@ -94,7 +97,7 @@ export default (state, elems) => {
   };
 
   const watchedState = onChange(state, (path, value) => {
-    const { timerId } = state;
+    const { timerId, form } = state;
     const { feedsElem, postsElem } = elems;
     switch (path) {
       case 'feeds':
@@ -111,10 +114,11 @@ export default (state, elems) => {
       case 'form.status':
         formHandler(value);
         break;
-      case 'loadingProcess.errors':
+      case 'loadingProcess.error':
         break;
-      case 'form.errors':
-        formHandler(value[value.length - 1]);
+      case 'form.error':
+        formHandler(value);
+        form.error = null;
         break;
       default:
         throw new Error(`Unknown path: ${path}`);

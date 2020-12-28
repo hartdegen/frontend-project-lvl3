@@ -29,16 +29,19 @@ const parseRssData = (obj) => {
   };
 };
 
+const proxy = 'https://api.allorigins.win/get?url=';
+
+const checkOnlineStatus = (url) => axios.get(`${proxy}${url}`)
+  .catch(() => { throw new Error('noConnection'); });
+
 const fetchFeeds = (urls, initialState) => {
   console.log('TRY TO GET FEEDS', new Date().toLocaleTimeString());
   const watchedState = initialState;
   watchedState.loadingProcess.status = 'loading';
-  console.log(watchedState.loadingProcess);
-  const proxy = 'https://api.allorigins.win/get?url=';
   const rawFeeds = urls.map((url) => axios.get(`${proxy}${url}`)
     .catch((e) => {
       watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.errors.push(e);
+      watchedState.loadingProcess.error = e;
     }));
   return Promise.all(rawFeeds)
     .then((feeds) => feeds.map((obj, index) => {
@@ -49,7 +52,7 @@ const fetchFeeds = (urls, initialState) => {
     }))
     .catch((e) => {
       watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.errors.push(e);
+      watchedState.loadingProcess.error = e;
     });
 };
 
@@ -78,21 +81,15 @@ const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => 
     })
     .catch((e) => {
       watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.errors.push(e);
+      watchedState.loadingProcess.error = e;
     });
 };
 
-const checkOnlineStatus = () => { if (!navigator.onLine) throw new Error('noConnection'); };
-
 export default () => i18next
   .init({
-    lng: 'en',
+    lng: 'e',
     debug: true,
     resources,
-  })
-  .catch((err) => {
-    console.log('something went wrong with i18next.init');
-    throw err;
   })
   .then(() => {
     document.querySelector('.formTitle').innerHTML = i18next.t('formTitle');
@@ -102,8 +99,8 @@ export default () => i18next
   })
   .then(() => {
     const state = {
-      loadingProcess: { status: 'idle', errors: [] },
-      form: { status: 'filling', errors: [] },
+      loadingProcess: { status: 'idle', error: null },
+      form: { status: 'filling', error: null },
       timerId: null,
       feeds: [],
       posts: [],
@@ -136,12 +133,12 @@ export default () => i18next
       watchedState.form.status = 'submited';
       Promise.resolve()
         .then(() => checkValidation(url, urlsList))
-        .then(() => checkOnlineStatus())
-        .then(() => showNews(actualUrls, watchedState, 5000))
+        .then(() => checkOnlineStatus(url))
+        .then(() => showNews(actualUrls, watchedState, 10000))
         .then(() => { watchedState.form.status = 'succeed'; })
         .catch((err) => {
           watchedState.loadingProcess.status = 'failed';
-          watchedState.form.errors.push(err.message);
+          watchedState.form.error = err.message;
         })
         .finally(() => { watchedState.form.status = 'filling'; });
     });
