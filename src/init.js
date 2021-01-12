@@ -31,7 +31,7 @@ const parseRssData = (obj) => {
 
 const proxy = 'https://api.allorigins.win/get?url=';
 
-const checkOnlineStatus = (url) => axios.get(`${proxy}${url}`)
+const checkConnection = (url) => axios.get(`${proxy}${url}`)
   .catch(() => { throw new Error('noConnection'); });
 
 const fetchFeeds = (urls, initialState) => {
@@ -56,32 +56,43 @@ const fetchFeeds = (urls, initialState) => {
     });
 };
 
-const updateNews = (feeds, initialState, allExistingFeedsPostsFromWarehouse) => {
-  const data = allExistingFeedsPostsFromWarehouse;
+const renderPosts = (feeds, initialState) => {
+  const watchedState = initialState;
+  return Promise.resolve()
+    .then(() => {
+      const value = feeds[feeds.length - 1];
+      watchedState.feeds.push(value.feed);
+      watchedState.posts.push(value.posts);
+      watchedState.loadingProcess.status = 'succeed';
+      watchedState.form.status = 'succeed';
+    })
+    .catch((e) => {
+      watchedState.loadingProcess.status = 'failed';
+      watchedState.loadingProcess.error = e;
+    });
+};
+
+const updatePosts = (feeds, initialState) => {
   const watchedState = initialState;
   return Promise.resolve()
     .then(() => {
       feeds.forEach((feed, i) => {
-        const isFeedLoadedFirstTime = !data[i];
-        if (isFeedLoadedFirstTime) {
-          data[i] = feed;
-          watchedState.feeds = [...data.map((value) => value.feed)];
-          watchedState.posts = [...data.map((value) => value.posts)];
-        } else {
-          const { posts } = data[i];
-          const existingTitles = posts.list.map((post) => post.title);
-          const newPosts = feed.posts.list.filter((post) => !existingTitles.includes(post.title));
-          if (newPosts.length > 0) {
-            posts.list.push(...newPosts);
-            watchedState.posts = [...data.map((value) => value.posts)];
-          }
+        const posts = watchedState.posts[i];
+        const existingTitles = posts.list.map((post) => post.title);
+        const newPosts = feed.posts.list.filter((post) => !existingTitles.includes(post.title));
+        if (newPosts.length > 0) {
+          watchedState.posts = [...watchedState.posts.map((value, index) => {
+            if (i === index) {
+              const updatedValue = value;
+              updatedValue.list.push(...newPosts);
+              return updatedValue;
+            }
+            return value;
+          })];
         }
       });
-      watchedState.loadingProcess.status = 'succeed';
-    }).catch((e) => {
-      watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.error = e;
-    });
+    })
+    .catch((e) => { watchedState.loadingProcess.error = e; });
 };
 
 export default () => i18next
@@ -100,7 +111,6 @@ export default () => i18next
     const state = {
       loadingProcess: { status: 'idle', error: null },
       form: { status: 'filling', error: null },
-      timerId: null,
       feeds: [],
       posts: [],
     };
@@ -114,31 +124,29 @@ export default () => i18next
       submitButton: document.querySelector('button'),
     };
 
-    let timerId;
-    const allFeedsPostsWarehouse = [];
     const watchedState = watcher(state, elems);
-    const showNews = (urls, initialState, timeOut) => Promise.resolve()
-      .then(() => fetchFeeds(urls, watchedState))
-      .then((feeds) => updateNews(feeds, initialState, allFeedsPostsWarehouse))
-      .then(() => { timerId = setTimeout(() => showNews(urls, initialState, timeOut), timeOut); });
+
+    const setAutoUpdating = (urls, initialState, timeOut) => Promise.resolve()
+      .then(() => (initialState.feeds.length === urls.length ? Promise.resolve()
+        : Promise.reject()))
+      .then(() => fetchFeeds(urls, initialState))
+      .then((feeds) => updatePosts(feeds, initialState))
+      .then(() => setTimeout(() => setAutoUpdating(urls, initialState, timeOut), timeOut));
 
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = e.target.querySelector('input').value;
-      const urlsList = allFeedsPostsWarehouse.map((value) => value.feed.url);
+      const urlsList = watchedState.feeds.map((value) => value.url);
       const actualUrls = [...urlsList, url];
 
-      watchedState.timerId = timerId;
       watchedState.form.status = 'submited';
       Promise.resolve()
         .then(() => checkValidation(url, urlsList))
-        .then(() => checkOnlineStatus(url))
-        .then(() => showNews(actualUrls, watchedState, 10000))
-        .then(() => { watchedState.form.status = 'succeed'; })
-        .catch((err) => {
-          watchedState.loadingProcess.status = 'failed';
-          watchedState.form.error = err.message;
-        })
-        .finally(() => { watchedState.form.status = 'filling'; });
+        .then(() => checkConnection(url))
+        .then(() => fetchFeeds(actualUrls, watchedState))
+        .then((feeds) => renderPosts(feeds, watchedState))
+        .then(() => setTimeout(() => setAutoUpdating(actualUrls, watchedState, 5000)), 5000)
+        .catch((err) => { watchedState.form.error = err.message; })
+        .then(() => { watchedState.form.status = 'filling'; });
     });
   });

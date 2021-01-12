@@ -43,10 +43,9 @@ const renderPosts = (rawPosts, container) => {
 };
 
 export default (state, elems) => {
-  const loadingProcessHandler = (status, timerId) => {
+  const loadingProcessHandler = (status) => {
     switch (status) {
       case 'loading':
-        clearTimeout(timerId);
         break;
       case 'failed':
         break;
@@ -92,7 +91,7 @@ export default (state, elems) => {
   };
 
   const watchedState = onChange(state, (path, value) => {
-    const { timerId, form } = state;
+    const { form } = state;
     const { feedsElem, postsElem } = elems;
     switch (path) {
       case 'feeds':
@@ -101,10 +100,8 @@ export default (state, elems) => {
       case 'posts':
         renderPosts(value, postsElem);
         break;
-      case 'timerId':
-        break;
       case 'loadingProcess.status':
-        loadingProcessHandler(value, timerId);
+        loadingProcessHandler(value);
         break;
       case 'form.status':
         formHandler(value);
@@ -112,7 +109,8 @@ export default (state, elems) => {
       case 'loadingProcess.error':
         break;
       case 'form.error':
-        formHandler(value); form.error = null;
+        formHandler(value);
+        form.error = null;
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
