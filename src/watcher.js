@@ -94,6 +94,8 @@ export default (state, elems) => {
     const { form } = state;
     const { feedsElem, postsElem } = elems;
     switch (path) {
+      case 'timerId':
+        break;
       case 'feeds':
         renderFeeds(value, feedsElem);
         break;

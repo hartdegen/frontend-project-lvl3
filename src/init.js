@@ -107,20 +107,18 @@ const updatePosts = (feeds, initialState) => {
     .catch((e) => { watchedState.loadingProcess.error = e; });
 };
 
-const setAutoUpdating = (prevUrls, timeOut, initialState) => setTimeout(() => {
+const setAutoUpdating = (timeOut, initialState) => {
   const watchedState = initialState;
-  const urls = watchedState.feeds.map((feed) => feed.url);
-  if (prevUrls.length !== urls.length) {
-    console.log('autoupdating changed, added new url');
-    return;
-  }
-  Promise.resolve()
-    .then(() => updateFeeds(urls, watchedState))
-    .then((feeds) => updatePosts(feeds, watchedState))
-    .then(() => setAutoUpdating(urls, timeOut, watchedState))
-    .catch((e) => console.log('somethings wrong with autoupdating', e));
-},
-timeOut);
+  watchedState.timerId = setTimeout(() => {
+    const urls = watchedState.feeds.map((feed) => feed.url);
+    Promise.resolve()
+      .then(() => updateFeeds(urls, watchedState))
+      .then((feeds) => updatePosts(feeds, watchedState))
+      .then(() => setAutoUpdating(timeOut, watchedState))
+      .catch((e) => console.log('somethings wrong with autoupdating', e));
+  },
+  timeOut);
+};
 
 export default () => i18next
   .init({
@@ -138,6 +136,7 @@ export default () => i18next
     const state = {
       loadingProcess: { status: 'idle', error: null },
       form: { status: 'filling', error: null },
+      timerId: null,
       feeds: [],
       posts: [],
     };
@@ -162,7 +161,8 @@ export default () => i18next
         .then(() => checkValidation(url, urls))
         .then(() => fetchFeed(url, watchedState))
         .then((feed) => renderPosts(feed, watchedState))
-        .then(() => setAutoUpdating(urls.concat(url), 5000, watchedState))
+        .then(() => clearTimeout(watchedState.timerId))
+        .then(() => setAutoUpdating(5000, watchedState))
         .finally(() => { watchedState.form.status = 'filling'; })
         .catch((err) => { watchedState.form.error = err.message; });
     });
