@@ -4,11 +4,12 @@ import watcher from './watcher.js';
 import resources from './locales.js';
 import checkValidation from './validation.js';
 
-const parseRssData = (obj) => {
+const parseRawRssData = (obj) => {
   const { url } = obj.data.status;
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
+  if (channel === null) throw new Error('Incorrect Rss');
   const items = channel.querySelectorAll('item');
   const posts = [];
   items.forEach((el) => {
@@ -29,38 +30,39 @@ const parseRssData = (obj) => {
   };
 };
 
+const setIdToFeed = (feed, id) => {
+  const data = feed;
+  data.feed.id = id;
+  data.posts.feedId = id;
+  return data;
+};
+
 const proxy = 'https://api.allorigins.win/get?url=';
+let feedId = 0;
 
-const checkConnection = (url) => axios.get(`${proxy}${url}`)
-  .catch(() => { throw new Error('noConnection'); });
-
-const fetchFeeds = (urls, initialState) => {
-  console.log('TRY TO GET FEEDS', new Date().toLocaleTimeString());
+const fetchFeed = (url, initialState) => {
   const watchedState = initialState;
   watchedState.loadingProcess.status = 'loading';
-  const rawFeeds = urls.map((url) => axios.get(`${proxy}${url}`)
+  return axios.get(`${proxy}${url}`)
+    .then((raw) => parseRawRssData(raw))
+    .then((feed) => {
+      const feedWithId = setIdToFeed(feed, feedId);
+      feedId += 1;
+      return feedWithId;
+    })
     .catch((e) => {
       watchedState.loadingProcess.status = 'failed';
       watchedState.loadingProcess.error = e;
-    }));
-  return Promise.all(rawFeeds)
-    .then((feeds) => feeds.map((obj, index) => {
-      const newFeedData = parseRssData(obj);
-      newFeedData.feed.id = index;
-      newFeedData.posts.feedId = index;
-      return newFeedData;
-    }))
-    .catch((e) => {
-      watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.error = e;
+      if (e.message === 'Network Error') throw new Error('noConnection');
+      if (e.message === 'Incorrect Rss') throw new Error('urlNotValidAsRss');
     });
 };
 
-const renderPosts = (feeds, initialState) => {
+const renderPosts = (feed, initialState) => {
   const watchedState = initialState;
   return Promise.resolve()
     .then(() => {
-      const value = feeds[feeds.length - 1];
+      const value = feed;
       watchedState.feeds.push(value.feed);
       watchedState.posts.push(value.posts);
       watchedState.loadingProcess.status = 'succeed';
@@ -70,6 +72,16 @@ const renderPosts = (feeds, initialState) => {
       watchedState.loadingProcess.status = 'failed';
       watchedState.loadingProcess.error = e;
     });
+};
+
+const updateFeeds = (urls, initialState) => {
+  const watchedState = initialState;
+  const RawRssData = urls.map((url) => axios.get(`${proxy}${url}`)
+    .catch((e) => { watchedState.loadingProcess.error = e; }));
+  return Promise.all(RawRssData)
+    .then((raw) => raw.map(parseRawRssData))
+    .then((feeds) => feeds.map((feed, i) => setIdToFeed(feed, i)))
+    .catch((e) => { watchedState.loadingProcess.error = e; });
 };
 
 const updatePosts = (feeds, initialState) => {
@@ -94,6 +106,21 @@ const updatePosts = (feeds, initialState) => {
     })
     .catch((e) => { watchedState.loadingProcess.error = e; });
 };
+
+const setAutoUpdating = (prevUrls, timeOut, initialState) => setTimeout(() => {
+  const watchedState = initialState;
+  const urls = watchedState.feeds.map((feed) => feed.url);
+  if (prevUrls.length !== urls.length) {
+    console.log('autoupdating changed, added new url');
+    return;
+  }
+  Promise.resolve()
+    .then(() => updateFeeds(urls, watchedState))
+    .then((feeds) => updatePosts(feeds, watchedState))
+    .then(() => setAutoUpdating(urls, timeOut, watchedState))
+    .catch((e) => console.log('somethings wrong with autoupdating', e));
+},
+timeOut);
 
 export default () => i18next
   .init({
@@ -126,27 +153,17 @@ export default () => i18next
 
     const watchedState = watcher(state, elems);
 
-    const setAutoUpdating = (urls, initialState, timeOut) => Promise.resolve()
-      .then(() => (initialState.feeds.length === urls.length ? Promise.resolve()
-        : Promise.reject()))
-      .then(() => fetchFeeds(urls, initialState))
-      .then((feeds) => updatePosts(feeds, initialState))
-      .then(() => setTimeout(() => setAutoUpdating(urls, initialState, timeOut), timeOut));
-
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = e.target.querySelector('input').value;
-      const urlsList = watchedState.feeds.map((value) => value.url);
-      const actualUrls = [...urlsList, url];
-
+      const urls = watchedState.feeds.map((feed) => feed.url);
       watchedState.form.status = 'submited';
       Promise.resolve()
-        .then(() => checkValidation(url, urlsList))
-        .then(() => checkConnection(url))
-        .then(() => fetchFeeds(actualUrls, watchedState))
-        .then((feeds) => renderPosts(feeds, watchedState))
-        .then(() => setTimeout(() => setAutoUpdating(actualUrls, watchedState, 5000)), 5000)
-        .catch((err) => { watchedState.form.error = err.message; })
-        .then(() => { watchedState.form.status = 'filling'; });
+        .then(() => checkValidation(url, urls))
+        .then(() => fetchFeed(url, watchedState))
+        .then((feed) => renderPosts(feed, watchedState))
+        .then(() => setAutoUpdating(urls.concat(url), 5000, watchedState))
+        .finally(() => { watchedState.form.status = 'filling'; })
+        .catch((err) => { watchedState.form.error = err.message; });
     });
   });
