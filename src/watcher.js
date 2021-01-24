@@ -1,6 +1,17 @@
 import i18next from 'i18next';
 import onChange from 'on-change';
 
+const renderFormParts = (elems) => {
+  const {
+    formTitle, lead, input, exampleBlock, submitButton,
+  } = elems;
+  formTitle.innerHTML = i18next.t('formTitle');
+  lead.innerHTML = i18next.t('lead');
+  input.value = i18next.t('inputValue');
+  exampleBlock.innerHTML = i18next.t('exampleBlock');
+  submitButton.innerHTML = i18next.t('submitButton');
+};
+
 const renderFeeds = (feeds, container) => {
   const parentElement = container;
   const div = document.createElement('div');
@@ -57,13 +68,16 @@ export default (state, elems) => {
   };
 
   const formHandler = (status) => {
-    const { loadingElem, input, submitButton } = elems;
+    const { loadingInfo, input, submitButton } = elems;
     const caseHandler = (statusCase, styleColor, styleBorder = null) => {
-      loadingElem.textContent = i18next.t(statusCase);
-      loadingElem.style.color = styleColor;
+      loadingInfo.textContent = i18next.t(statusCase);
+      loadingInfo.style.color = styleColor;
       input.style.border = styleBorder;
     };
     switch (status) {
+      case 'renderFormParts':
+        renderFormParts(elems);
+        break;
       case 'submited':
         submitButton.disabled = true;
         break;

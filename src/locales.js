@@ -3,7 +3,8 @@ export default {
     translation: {
       formTitle: 'RSS Reader',
       lead: 'Start reading RSS today! It is easy, it is nicely.',
-      button: 'Add',
+      inputValue: 'https://news.yandex.ru/politics.rss',
+      submitButton: 'Add',
       exampleBlock: 'Example: https://news.yandex.ru/auto.rss',
       noConnection: 'Network Error',
       alreadyExists: 'Rss already exists',

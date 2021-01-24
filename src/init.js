@@ -127,12 +127,6 @@ export default () => i18next
     resources,
   })
   .then(() => {
-    document.querySelector('.formTitle').innerHTML = i18next.t('formTitle');
-    document.querySelector('.lead').innerHTML = i18next.t('lead');
-    document.querySelector('button').innerHTML = i18next.t('button');
-    document.querySelector('.exampleBlock').innerHTML = i18next.t('exampleBlock');
-  })
-  .then(() => {
     const state = {
       loadingProcess: { status: 'idle', error: null },
       form: { status: 'filling', error: null },
@@ -142,15 +136,19 @@ export default () => i18next
     };
 
     const elems = {
-      feedsElem: document.querySelector('div.feeds'),
-      postsElem: document.querySelector('div.posts'),
-      loadingElem: document.querySelector('div.loadingInfo'),
       form: document.querySelector('form'),
-      input: document.querySelector('input'),
-      submitButton: document.querySelector('button'),
+      formTitle: document.querySelector('.formTitle'),
+      lead: document.querySelector('.lead'),
+      input: document.querySelector('.inputField'),
+      exampleBlock: document.querySelector('.exampleBlock'),
+      loadingInfo: document.querySelector('.loadingInfo'),
+      submitButton: document.querySelector('.submitButton'),
+      feedsElem: document.querySelector('.feeds'),
+      postsElem: document.querySelector('.posts'),
     };
 
     const watchedState = watcher(state, elems);
+    watchedState.form.status = 'renderFormParts';
 
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
