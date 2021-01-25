@@ -10,7 +10,7 @@ export default {
       alreadyExists: 'Rss already exists',
       succeed: 'Rss has been loaded',
       urlNotValid: 'Must be valid url',
-      urlNotValidAsRss: 'This source does not contain valid rss',
+      urlNotValidAsRssLink: 'This source does not contain valid rss',
     },
   },
 };

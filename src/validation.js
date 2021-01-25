@@ -16,7 +16,7 @@ export default (url, list) => {
         case 'url':
           throw new Error('urlNotValid');
         case 'matches':
-          throw new Error('urlNotValidAsRss');
+          throw new Error('urlNotValidAsRssLink');
         default:
           throw new Error(`Unknown error type: ${err.type}`);
       }

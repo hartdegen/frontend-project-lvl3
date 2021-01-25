@@ -9,7 +9,7 @@ const parseRawRssData = (obj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
-  if (channel === null) throw new Error('Incorrect Rss');
+  if (channel === null) throw new Error('urlNotValidAsRssLink');
   const items = channel.querySelectorAll('item');
   const posts = [];
   items.forEach((el) => {
@@ -42,7 +42,7 @@ let feedId = 0;
 
 const fetchFeed = (url, initialState) => {
   const watchedState = initialState;
-  watchedState.loadingProcess.status = 'loading';
+  watchedState.loadingProcess = 'loading';
   return axios.get(`${proxy}${url}`)
     .then((raw) => parseRawRssData(raw))
     .then((feed) => {
@@ -50,12 +50,7 @@ const fetchFeed = (url, initialState) => {
       feedId += 1;
       return feedWithId;
     })
-    .catch((e) => {
-      watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.error = e;
-      if (e.message === 'Network Error') throw new Error('noConnection');
-      if (e.message === 'Incorrect Rss') throw new Error('urlNotValidAsRss');
-    });
+    .catch((e) => { throw new Error(e.message); });
 };
 
 const renderPosts = (feed, initialState) => {
@@ -65,23 +60,18 @@ const renderPosts = (feed, initialState) => {
       const value = feed;
       watchedState.feeds.push(value.feed);
       watchedState.posts.push(value.posts);
-      watchedState.loadingProcess.status = 'succeed';
-      watchedState.form.status = 'succeed';
+      watchedState.loadingProcess = 'succeed';
     })
-    .catch((e) => {
-      watchedState.loadingProcess.status = 'failed';
-      watchedState.loadingProcess.error = e;
-    });
+    .catch((e) => { throw new Error(e.message); });
 };
 
-const updateFeeds = (urls, initialState) => {
-  const watchedState = initialState;
+const updateFeeds = (urls) => {
   const RawRssData = urls.map((url) => axios.get(`${proxy}${url}`)
-    .catch((e) => { watchedState.loadingProcess.error = e; }));
+    .catch((e) => { throw new Error(e.message); }));
   return Promise.all(RawRssData)
     .then((raw) => raw.map(parseRawRssData))
     .then((feeds) => feeds.map((feed, i) => setIdToFeed(feed, i)))
-    .catch((e) => { watchedState.loadingProcess.error = e; });
+    .catch((e) => { throw new Error(e.message); });
 };
 
 const updatePosts = (feeds, initialState) => {
@@ -104,7 +94,7 @@ const updatePosts = (feeds, initialState) => {
         }
       });
     })
-    .catch((e) => { watchedState.loadingProcess.error = e; });
+    .catch((e) => { throw new Error(e.message); });
 };
 
 const setAutoUpdating = (timeOut, initialState) => {
@@ -128,8 +118,9 @@ export default () => i18next
   })
   .then(() => {
     const state = {
-      loadingProcess: { status: 'idle', error: null },
-      form: { status: 'filling', error: null },
+      loadingProcess: 'idle',
+      loadingError: null,
+      form: 'notRenderedCompletely',
       timerId: null,
       feeds: [],
       posts: [],
@@ -148,20 +139,23 @@ export default () => i18next
     };
 
     const watchedState = watcher(state, elems);
-    watchedState.form.status = 'renderFormParts';
+    watchedState.form = 'renderCompletelyAndSetFillingStatus';
 
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = e.target.querySelector('input').value;
       const urls = watchedState.feeds.map((feed) => feed.url);
-      watchedState.form.status = 'submited';
+      watchedState.form = 'submited';
       Promise.resolve()
         .then(() => checkValidation(url, urls))
         .then(() => fetchFeed(url, watchedState))
         .then((feed) => renderPosts(feed, watchedState))
         .then(() => clearTimeout(watchedState.timerId))
         .then(() => setAutoUpdating(5000, watchedState))
-        .finally(() => { watchedState.form.status = 'filling'; })
-        .catch((err) => { watchedState.form.error = err.message; });
+        .finally(() => { watchedState.form = 'filling'; })
+        .catch((err) => {
+          console.log(111, err, err.message);
+          watchedState.loadingProcess = err.message;
+        });
     });
   });

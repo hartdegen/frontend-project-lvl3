@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import onChange from 'on-change';
 
-const renderFormParts = (elems) => {
+const renderForm = (elems) => {
   const {
     formTitle, lead, input, exampleBlock, submitButton,
   } = elems;
@@ -54,47 +54,51 @@ const renderPosts = (rawPosts, container) => {
 };
 
 export default (state, elems) => {
-  const loadingProcessHandler = (status) => {
-    switch (status) {
-      case 'loading':
-        break;
-      case 'failed':
-        break;
-      case 'succeed':
-        break;
-      default:
-        throw new Error(`Unknown status: ${status}`);
-    }
-  };
-
-  const formHandler = (status) => {
-    const { loadingInfo, input, submitButton } = elems;
+  const loadingProcessHandler = (status, initialState) => {
+    const watchedState = initialState;
+    const { loadingInfo, input } = elems;
     const caseHandler = (statusCase, styleColor, styleBorder = null) => {
       loadingInfo.textContent = i18next.t(statusCase);
       loadingInfo.style.color = styleColor;
       input.style.border = styleBorder;
     };
     switch (status) {
-      case 'renderFormParts':
-        renderFormParts(elems);
+      case 'loading':
         break;
-      case 'submited':
-        submitButton.disabled = true;
-        break;
-      case 'noConnection':
+      case 'Network Error':
         caseHandler('noConnection', 'Red');
-        break;
-      case 'urlNotValid':
-        caseHandler('urlNotValid', 'Red', 'thick solid red');
-        break;
-      case 'urlNotValidAsRss':
-        caseHandler('urlNotValidAsRss', 'Red');
+        watchedState.loadingError = status;
         break;
       case 'alreadyExists':
         caseHandler('alreadyExists', 'Red');
+        watchedState.loadingError = status;
+        break;
+      case 'urlNotValidAsRssLink':
+        caseHandler('urlNotValidAsRssLink', 'Red');
+        watchedState.loadingError = status;
+        break;
+      case 'urlNotValid':
+        caseHandler('urlNotValid', 'Red', 'thick solid red');
+        watchedState.loadingError = status;
         break;
       case 'succeed':
         caseHandler('succeed', 'Green');
+        break;
+      default:
+        watchedState.loadingError = status;
+        throw new Error(`Unknown status: ${status}`);
+    }
+  };
+
+  const formHandler = (status) => {
+    const { submitButton } = elems;
+    switch (status) {
+      case 'renderCompletelyAndSetFillingStatus':
+        renderForm(elems);
+        formHandler('filling');
+        break;
+      case 'submited':
+        submitButton.disabled = true;
         break;
       case 'filling':
         submitButton.disabled = false;
@@ -105,7 +109,6 @@ export default (state, elems) => {
   };
 
   const watchedState = onChange(state, (path, value) => {
-    const { form } = state;
     const { feedsElem, postsElem } = elems;
     switch (path) {
       case 'timerId':
@@ -116,17 +119,14 @@ export default (state, elems) => {
       case 'posts':
         renderPosts(value, postsElem);
         break;
-      case 'loadingProcess.status':
-        loadingProcessHandler(value);
+      case 'loadingProcess':
+        loadingProcessHandler(value, watchedState);
         break;
-      case 'form.status':
-        formHandler(value);
+      case 'loadingError':
+        console.log(`loading process is failed, status - ${value}`);
         break;
-      case 'loadingProcess.error':
-        break;
-      case 'form.error':
-        formHandler(value);
-        form.error = null;
+      case 'form':
+        formHandler(value, watchedState);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
