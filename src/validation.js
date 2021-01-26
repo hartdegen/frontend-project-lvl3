@@ -12,11 +12,11 @@ export default (url, list) => {
     .catch((err) => {
       switch (err.type) {
         case 'notOneOf':
-          throw new Error('alreadyExists');
+          throw new Error('yupUrlAlreadyExists');
         case 'url':
-          throw new Error('urlNotValid');
+          throw new Error('yupUrlNotValid');
         case 'matches':
-          throw new Error('urlNotValidAsRssLink');
+          throw new Error('yupUrlNotValidAsRssLink');
         default:
           throw new Error(`Unknown error type: ${err.type}`);
       }

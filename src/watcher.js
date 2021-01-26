@@ -12,8 +12,8 @@ const renderForm = (elems) => {
   submitButton.innerHTML = i18next.t('submitButton');
 };
 
-const renderFeeds = (feeds, container) => {
-  const parentElement = container;
+const renderFeeds = (elems, feeds) => {
+  const { feedsElem } = elems;
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   h2.textContent = 'Feeds';
@@ -30,11 +30,11 @@ const renderFeeds = (feeds, container) => {
     ul.prepend(li);
   });
   div.append(ul);
-  parentElement.innerHTML = div.innerHTML;
+  feedsElem.innerHTML = div.innerHTML;
 };
 
-const renderPosts = (rawPosts, container) => {
-  const parentElement = container;
+const renderPosts = (elems, rawPosts) => {
+  const { postsElem } = elems;
   const posts = rawPosts.map((value) => value.list).flat();
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
@@ -50,83 +50,112 @@ const renderPosts = (rawPosts, container) => {
     ul.appendChild(li);
   });
   div.append(ul);
-  parentElement.innerHTML = div.innerHTML;
+  postsElem.innerHTML = div.innerHTML;
+};
+
+const loadingCaseHandler = (elems, statusCase, styleColor, styleBorder = null) => {
+  const { loadingInfo, input } = elems;
+  loadingInfo.textContent = i18next.t(statusCase);
+  loadingInfo.style.color = styleColor;
+  input.style.border = styleBorder;
+};
+
+const loadingProcessStatusHandler = (elems, status) => {
+  switch (status) {
+    case 'loading':
+      // loadingCaseHandler(elems, 'loading', 'Blue');
+      break;
+    case 'succeed':
+      loadingCaseHandler(elems, 'succeed', 'Green');
+      break;
+    default:
+      throw new Error(`Unknown loading process status: ${status}`);
+  }
+};
+
+const formStatusHandler = (elems, status) => {
+  const { submitButton } = elems;
+  switch (status) {
+    case 'renderCompletelyAndSetFillingStatus':
+      renderForm(elems);
+      break;
+    case 'submited':
+      submitButton.disabled = true;
+      break;
+    case 'filling':
+      submitButton.disabled = false;
+      break;
+    default:
+      throw new Error(`Unknown status: ${status}`);
+  }
+};
+
+const loadingProcessErrorHandler = (elems, error) => {
+  switch (error) {
+    case 'Network Error':
+      loadingCaseHandler(elems, 'noConnection', 'Red');
+      break;
+    case 'urlNotValidAsRssLink':
+      loadingCaseHandler(elems, 'urlNotValidAsRssLink', 'Red');
+      break;
+    default:
+      throw new Error(`Unknown loading process error: ${error}`);
+  }
+};
+
+const formErrorHandler = (elems, error) => {
+  switch (error) {
+    case 'yupUrlAlreadyExists':
+      loadingCaseHandler(elems, 'yupUrlAlreadyExists', 'Red');
+      break;
+    case 'yupUrlNotValidAsRssLink':
+      loadingCaseHandler(elems, 'yupUrlNotValidAsRssLink', 'Red');
+      break;
+    case 'yupUrlNotValid':
+      loadingCaseHandler(elems, 'yupUrlNotValid', 'Red', 'thick solid red');
+      break;
+    default:
+      throw new Error(`Unknown loading process error: ${error}`);
+  }
+};
+
+const processError = (err, initialState) => {
+  const watchedState = initialState;
+  if (err.includes('yup')) {
+    watchedState.form.error = err;
+    return;
+  }
+  watchedState.loadingProcess.error = err;
 };
 
 export default (state, elems) => {
-  const loadingProcessHandler = (status, initialState) => {
-    const watchedState = initialState;
-    const { loadingInfo, input } = elems;
-    const caseHandler = (statusCase, styleColor, styleBorder = null) => {
-      loadingInfo.textContent = i18next.t(statusCase);
-      loadingInfo.style.color = styleColor;
-      input.style.border = styleBorder;
-    };
-    switch (status) {
-      case 'loading':
-        break;
-      case 'Network Error':
-        caseHandler('noConnection', 'Red');
-        watchedState.loadingError = status;
-        break;
-      case 'alreadyExists':
-        caseHandler('alreadyExists', 'Red');
-        watchedState.loadingError = status;
-        break;
-      case 'urlNotValidAsRssLink':
-        caseHandler('urlNotValidAsRssLink', 'Red');
-        watchedState.loadingError = status;
-        break;
-      case 'urlNotValid':
-        caseHandler('urlNotValid', 'Red', 'thick solid red');
-        watchedState.loadingError = status;
-        break;
-      case 'succeed':
-        caseHandler('succeed', 'Green');
-        break;
-      default:
-        watchedState.loadingError = status;
-        throw new Error(`Unknown status: ${status}`);
-    }
-  };
-
-  const formHandler = (status) => {
-    const { submitButton } = elems;
-    switch (status) {
-      case 'renderCompletelyAndSetFillingStatus':
-        renderForm(elems);
-        formHandler('filling');
-        break;
-      case 'submited':
-        submitButton.disabled = true;
-        break;
-      case 'filling':
-        submitButton.disabled = false;
-        break;
-      default:
-        throw new Error(`Unknown status: ${status}`);
-    }
-  };
-
   const watchedState = onChange(state, (path, value) => {
-    const { feedsElem, postsElem } = elems;
     switch (path) {
       case 'timerId':
         break;
       case 'feeds':
-        renderFeeds(value, feedsElem);
+        renderFeeds(elems, value);
         break;
       case 'posts':
-        renderPosts(value, postsElem);
+        renderPosts(elems, value);
         break;
       case 'loadingProcess':
-        loadingProcessHandler(value, watchedState);
+        console.log(222, state);
         break;
-      case 'loadingError':
-        console.log(`loading process is failed, status - ${value}`);
+      case 'loadingProcess.status':
+        loadingProcessStatusHandler(elems, value);
         break;
-      case 'form':
-        formHandler(value, watchedState);
+      case 'loadingProcess.error':
+        loadingProcessErrorHandler(elems, value);
+        break;
+      case 'form.status':
+        formStatusHandler(elems, value);
+        break;
+      case 'form.error':
+        formErrorHandler(elems, value);
+        break;
+      case 'error':
+        processError(value, watchedState);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);

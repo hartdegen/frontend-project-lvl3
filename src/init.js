@@ -42,7 +42,7 @@ let feedId = 0;
 
 const fetchFeed = (url, initialState) => {
   const watchedState = initialState;
-  watchedState.loadingProcess = 'loading';
+  watchedState.loadingProcess.status = 'loading';
   return axios.get(`${proxy}${url}`)
     .then((raw) => parseRawRssData(raw))
     .then((feed) => {
@@ -60,7 +60,7 @@ const renderPosts = (feed, initialState) => {
       const value = feed;
       watchedState.feeds.push(value.feed);
       watchedState.posts.push(value.posts);
-      watchedState.loadingProcess = 'succeed';
+      watchedState.loadingProcess.status = 'succeed';
     })
     .catch((e) => { throw new Error(e.message); });
 };
@@ -118,9 +118,8 @@ export default () => i18next
   })
   .then(() => {
     const state = {
-      loadingProcess: 'idle',
-      loadingError: null,
-      form: 'notRenderedCompletely',
+      loadingProcess: { status: 'idle', error: null },
+      form: { status: 'notRenderedCompletely', error: null },
       timerId: null,
       feeds: [],
       posts: [],
@@ -139,23 +138,23 @@ export default () => i18next
     };
 
     const watchedState = watcher(state, elems);
-    watchedState.form = 'renderCompletelyAndSetFillingStatus';
+    watchedState.form.status = 'renderCompletelyAndSetFillingStatus';
 
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = e.target.querySelector('input').value;
       const urls = watchedState.feeds.map((feed) => feed.url);
-      watchedState.form = 'submited';
+      watchedState.form.status = 'submited';
       Promise.resolve()
         .then(() => checkValidation(url, urls))
         .then(() => fetchFeed(url, watchedState))
         .then((feed) => renderPosts(feed, watchedState))
         .then(() => clearTimeout(watchedState.timerId))
         .then(() => setAutoUpdating(5000, watchedState))
-        .finally(() => { watchedState.form = 'filling'; })
+        .finally(() => { watchedState.form.status = 'filling'; })
         .catch((err) => {
           console.log(111, err, err.message);
-          watchedState.loadingProcess = err.message;
+          watchedState.error = err.message;
         });
     });
   });

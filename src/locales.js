@@ -7,10 +7,13 @@ export default {
       submitButton: 'Add',
       exampleBlock: 'Example: https://news.yandex.ru/auto.rss',
       noConnection: 'Network Error',
-      alreadyExists: 'Rss already exists',
+      // loading: 'loading data',
       succeed: 'Rss has been loaded',
-      urlNotValid: 'Must be valid url',
       urlNotValidAsRssLink: 'This source does not contain valid rss',
+
+      yupUrlAlreadyExists: 'Rss already exists',
+      yupUrlNotValid: 'Must be valid url',
+      yupUrlNotValidAsRssLink: 'This source does not contain valid rss',
     },
   },
 };
