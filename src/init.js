@@ -145,16 +145,20 @@ export default () => i18next
       const url = e.target.querySelector('input').value;
       const urls = watchedState.feeds.map((feed) => feed.url);
       watchedState.form.status = 'submited';
+
+      try {
+        checkValidation(url, urls);
+      } catch (err) {
+        watchedState.form = ['filling', err];
+        return;
+      }
+
       Promise.resolve()
-        .then(() => checkValidation(url, urls))
         .then(() => fetchFeed(url, watchedState))
         .then((feed) => renderPosts(feed, watchedState))
         .then(() => clearTimeout(watchedState.timerId))
         .then(() => setAutoUpdating(5000, watchedState))
         .finally(() => { watchedState.form.status = 'filling'; })
-        .catch((err) => {
-          console.log(111, err, err.message);
-          watchedState.error = err.message;
-        });
+        .catch((err) => { watchedState.loadingProcess = ['failed', err]; });
     });
   });

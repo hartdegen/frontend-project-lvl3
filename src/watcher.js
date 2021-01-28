@@ -53,7 +53,7 @@ const renderPosts = (elems, rawPosts) => {
   postsElem.innerHTML = div.innerHTML;
 };
 
-const loadingCaseHandler = (elems, statusCase, styleColor, styleBorder = null) => {
+const renderInfo = (elems, statusCase, styleColor, styleBorder = null) => {
   const { loadingInfo, input } = elems;
   loadingInfo.textContent = i18next.t(statusCase);
   loadingInfo.style.color = styleColor;
@@ -66,7 +66,9 @@ const loadingProcessStatusHandler = (elems, status) => {
       // loadingCaseHandler(elems, 'loading', 'Blue');
       break;
     case 'succeed':
-      loadingCaseHandler(elems, 'succeed', 'Green');
+      renderInfo(elems, 'succeed', 'Green');
+      break;
+    case 'failed':
       break;
     default:
       throw new Error(`Unknown loading process status: ${status}`);
@@ -86,17 +88,17 @@ const formStatusHandler = (elems, status) => {
       submitButton.disabled = false;
       break;
     default:
-      throw new Error(`Unknown status: ${status}`);
+      throw new Error(`Unknown form status: ${status}`);
   }
 };
 
 const loadingProcessErrorHandler = (elems, error) => {
   switch (error) {
     case 'Network Error':
-      loadingCaseHandler(elems, 'noConnection', 'Red');
+      renderInfo(elems, 'noConnection', 'Red');
       break;
     case 'urlNotValidAsRssLink':
-      loadingCaseHandler(elems, 'urlNotValidAsRssLink', 'Red');
+      renderInfo(elems, 'urlNotValidAsRssLink', 'Red');
       break;
     default:
       throw new Error(`Unknown loading process error: ${error}`);
@@ -104,43 +106,42 @@ const loadingProcessErrorHandler = (elems, error) => {
 };
 
 const formErrorHandler = (elems, error) => {
-  switch (error) {
-    case 'yupUrlAlreadyExists':
-      loadingCaseHandler(elems, 'yupUrlAlreadyExists', 'Red');
+  const errorType = error.type;
+  switch (errorType) {
+    case 'notOneOf':
+      renderInfo(elems, 'notOneOf', 'Red');
       break;
-    case 'yupUrlNotValidAsRssLink':
-      loadingCaseHandler(elems, 'yupUrlNotValidAsRssLink', 'Red');
+    case 'url':
+      renderInfo(elems, 'url', 'Red', 'thick solid red');
       break;
-    case 'yupUrlNotValid':
-      loadingCaseHandler(elems, 'yupUrlNotValid', 'Red', 'thick solid red');
+    case 'matches':
+      renderInfo(elems, 'matches', 'Red');
       break;
     default:
-      throw new Error(`Unknown loading process error: ${error}`);
+      throw new Error(`Unknown form error: ${error}`);
   }
-};
-
-const processError = (err, initialState) => {
-  const watchedState = initialState;
-  if (err.includes('yup')) {
-    watchedState.form.error = err;
-    return;
-  }
-  watchedState.loadingProcess.error = err;
 };
 
 export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
+    const status = value[0];
+    const error = value[1];
     switch (path) {
       case 'timerId':
+        break;
+      case 'loadingProcess':
+        watchedState.loadingProcess.status = status;
+        watchedState.loadingProcess.error = error;
+        break;
+      case 'form':
+        watchedState.form.status = status;
+        watchedState.form.error = error;
         break;
       case 'feeds':
         renderFeeds(elems, value);
         break;
       case 'posts':
         renderPosts(elems, value);
-        break;
-      case 'loadingProcess':
-        console.log(222, state);
         break;
       case 'loadingProcess.status':
         loadingProcessStatusHandler(elems, value);
@@ -153,9 +154,6 @@ export default (state, elems) => {
         break;
       case 'form.error':
         formErrorHandler(elems, value);
-        break;
-      case 'error':
-        processError(value, watchedState);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
