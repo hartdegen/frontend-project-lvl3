@@ -4,5 +4,4 @@ export default (url, list) => yup
   .string()
   .notOneOf(list)
   .url()
-  .matches(/(\.rss)$/)
   .validateSync(url);

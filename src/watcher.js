@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import onChange from 'on-change';
 
-const renderForm = (elems) => {
+const signFormElements = (elems) => {
   const {
     formTitle, lead, input, exampleBlock, submitButton,
   } = elems;
@@ -41,7 +41,7 @@ const renderPosts = (elems, rawPosts) => {
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  posts.forEach(({ postTitle, link }) => {
+  posts.reverse().forEach(({ postTitle, link }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = postTitle;
@@ -77,8 +77,8 @@ const handleLoadingProcessStatus = (elems, status) => {
 const handleFormStatus = (elems, status) => {
   const { submitButton } = elems;
   switch (status) {
-    case 'renderCompletelyAndSetFillingStatus':
-      renderForm(elems);
+    case 'formElementsSigned':
+      signFormElements(elems);
       break;
     case 'submited':
       submitButton.disabled = true;
@@ -97,8 +97,8 @@ const handleLoadingProcessError = (elems, error) => {
     case 'Network Error':
       renderInfo(elems, 'noConnection', 'Red');
       break;
-    case 'urlNotValidAsRssLink':
-      renderInfo(elems, 'urlNotValidAsRssLink', 'Red');
+    case 'urlNotValidAsRss':
+      renderInfo(elems, 'urlNotValidAsRss', 'Red');
       break;
     default:
       throw new Error(`Unknown loading process error: ${error}`);
@@ -113,9 +113,6 @@ const handleFormError = (elems, error) => {
       break;
     case 'url':
       renderInfo(elems, 'url', 'Red', 'thick solid red');
-      break;
-    case 'matches':
-      renderInfo(elems, 'matches', 'Red');
       break;
     default:
       throw new Error(`Unknown form error: ${error}`);
