@@ -10,104 +10,65 @@ const parseRawRssData = (obj) => {
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('channel');
   if (channel === null) throw new Error('urlNotValidAsRssLink');
+  return { url, channel };
+};
+
+const processData = (obj, id) => {
+  const { url, channel } = obj;
+  const title = channel.querySelector('title').textContent;
+  const description = channel.querySelector('description').textContent;
   const items = channel.querySelectorAll('item');
   const posts = [];
   items.forEach((el) => {
     const pubDate = Date.parse(el.querySelector('pubDate').textContent);
-    const title = el.querySelector('title').textContent;
+    const postTitle = el.querySelector('title').textContent;
     const link = el.querySelector('link').textContent;
-    posts.push({ pubDate, title, link });
+    posts.push({ pubDate, postTitle, link });
   });
   return {
     feed: {
-      url,
-      title: channel.querySelector('title').textContent,
-      description: channel.querySelector('description').textContent,
+      id, url, title, description,
     },
-    posts: {
-      list: posts,
-    },
+    posts: { id, list: posts },
   };
 };
 
-const setIdToFeed = (feed, id) => {
-  const data = feed;
-  data.feed.id = id;
-  data.posts.feedId = id;
-  return data;
-};
-
-const proxy = 'https://api.allorigins.win/get?url=';
-let feedId = 0;
-
-const fetchFeed = (url, initialState) => {
+const fetchNewPosts = (initialState, urls) => {
+  // не могу придумать лаконичное условие для остановки автообновления
+  // const stopCondition = ???;
+  const proxy = 'https://api.allorigins.win/get?url=';
   const watchedState = initialState;
-  watchedState.loadingProcess.status = 'loading';
-  return axios.get(`${proxy}${url}`)
-    .then((raw) => parseRawRssData(raw))
-    .then((feed) => {
-      const feedWithId = setIdToFeed(feed, feedId);
-      feedId += 1;
-      return feedWithId;
-    })
-    .catch((e) => { throw new Error(e.message); });
-};
-
-const renderPosts = (feed, initialState) => {
-  const watchedState = initialState;
-  return Promise.resolve()
-    .then(() => {
-      const value = feed;
-      watchedState.feeds.push(value.feed);
-      watchedState.posts.push(value.posts);
-      watchedState.loadingProcess.status = 'succeed';
-    })
-    .catch((e) => { throw new Error(e.message); });
-};
-
-const updateFeeds = (urls) => {
-  const RawRssData = urls.map((url) => axios.get(`${proxy}${url}`)
+  const rawRssData = urls.map((url) => axios.get(`${proxy}${url}`)
     .catch((e) => { throw new Error(e.message); }));
-  return Promise.all(RawRssData)
-    .then((raw) => raw.map(parseRawRssData))
-    .then((feeds) => feeds.map((feed, i) => setIdToFeed(feed, i)))
-    .catch((e) => { throw new Error(e.message); });
-};
-
-const updatePosts = (feeds, initialState) => {
-  const watchedState = initialState;
-  return Promise.resolve()
-    .then(() => {
-      feeds.forEach((feed, i) => {
-        const posts = watchedState.posts[i];
-        const existingTitles = posts.list.map((post) => post.title);
-        const newPosts = feed.posts.list.filter((post) => !existingTitles.includes(post.title));
-        if (newPosts.length > 0) {
-          watchedState.posts = [...watchedState.posts.map((value, index) => {
-            if (i === index) {
-              const updatedValue = value;
-              updatedValue.list.push(...newPosts);
-              return updatedValue;
+  return urls.length === watchedState.feeds.length
+    ? null
+    : Promise.all(rawRssData)
+      .then((raw) => {
+        const data = raw.map(parseRawRssData);
+        const feeds = data.map(processData);
+        feeds.forEach((val, i) => {
+          const posts = watchedState.posts[i];
+          if (!posts) {
+            watchedState.feeds.push(val.feed);
+            watchedState.posts.push(val.posts);
+          } else {
+            const existingTitles = posts.list.map((post) => post.title);
+            const newPosts = val.posts.list.filter((post) => !existingTitles.includes(post.title));
+            if (newPosts.length > 0) {
+              watchedState.posts = [...watchedState.posts.map((value, index) => {
+                if (i === index) {
+                  const updatedValue = value;
+                  updatedValue.list.push(...newPosts);
+                  return updatedValue;
+                }
+                return value;
+              })];
             }
-            return value;
-          })];
-        }
-      });
-    })
-    .catch((e) => { throw new Error(e.message); });
-};
-
-const setAutoUpdating = (timeOut, initialState) => {
-  const watchedState = initialState;
-  watchedState.timerId = setTimeout(() => {
-    const urls = watchedState.feeds.map((feed) => feed.url);
-    Promise.resolve()
-      .then(() => updateFeeds(urls, watchedState))
-      .then((feeds) => updatePosts(feeds, watchedState))
-      .then(() => setAutoUpdating(timeOut, watchedState))
-      .catch((e) => console.log('somethings wrong with autoupdating', e));
-  },
-  timeOut);
+          }
+        });
+      })
+      .then(() => setTimeout(() => fetchNewPosts(watchedState, urls), 5000))
+      .catch((e) => { throw new Error(e.message); });
 };
 
 export default () => i18next
@@ -120,7 +81,6 @@ export default () => i18next
     const state = {
       loadingProcess: { status: 'idle', error: null },
       form: { status: 'notRenderedCompletely', error: null },
-      timerId: null,
       feeds: [],
       posts: [],
     };
@@ -149,16 +109,16 @@ export default () => i18next
       try {
         checkValidation(url, urls);
       } catch (err) {
-        watchedState.form = ['filling', err];
+        watchedState.form = { status: 'filling', error: err };
         return;
       }
+      const validUrls = [...urls, url];
 
+      watchedState.loadingProcess.status = 'loading';
       Promise.resolve()
-        .then(() => fetchFeed(url, watchedState))
-        .then((feed) => renderPosts(feed, watchedState))
-        .then(() => clearTimeout(watchedState.timerId))
-        .then(() => setAutoUpdating(5000, watchedState))
+        .then(() => fetchNewPosts(watchedState, validUrls))
+        .then(() => { watchedState.loadingProcess.status = 'succeed'; })
         .finally(() => { watchedState.form.status = 'filling'; })
-        .catch((err) => { watchedState.loadingProcess = ['failed', err]; });
+        .catch((err) => { watchedState.loadingProcess = { status: 'failed', error: err }; });
     });
   });

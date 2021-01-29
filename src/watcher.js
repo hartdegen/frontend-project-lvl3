@@ -41,10 +41,10 @@ const renderPosts = (elems, rawPosts) => {
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  posts.forEach(({ title, link }) => {
+  posts.forEach(({ postTitle, link }) => {
     const a = document.createElement('a');
     a.href = link;
-    a.textContent = title;
+    a.textContent = postTitle;
     const li = document.createElement('li');
     li.appendChild(a);
     ul.appendChild(li);
@@ -60,10 +60,9 @@ const renderInfo = (elems, statusCase, styleColor, styleBorder = null) => {
   input.style.border = styleBorder;
 };
 
-const loadingProcessStatusHandler = (elems, status) => {
+const handleLoadingProcessStatus = (elems, status) => {
   switch (status) {
     case 'loading':
-      // loadingCaseHandler(elems, 'loading', 'Blue');
       break;
     case 'succeed':
       renderInfo(elems, 'succeed', 'Green');
@@ -75,7 +74,7 @@ const loadingProcessStatusHandler = (elems, status) => {
   }
 };
 
-const formStatusHandler = (elems, status) => {
+const handleFormStatus = (elems, status) => {
   const { submitButton } = elems;
   switch (status) {
     case 'renderCompletelyAndSetFillingStatus':
@@ -92,8 +91,9 @@ const formStatusHandler = (elems, status) => {
   }
 };
 
-const loadingProcessErrorHandler = (elems, error) => {
-  switch (error) {
+const handleLoadingProcessError = (elems, error) => {
+  const errorMessage = error.message;
+  switch (errorMessage) {
     case 'Network Error':
       renderInfo(elems, 'noConnection', 'Red');
       break;
@@ -105,7 +105,7 @@ const loadingProcessErrorHandler = (elems, error) => {
   }
 };
 
-const formErrorHandler = (elems, error) => {
+const handleFormError = (elems, error) => {
   const errorType = error.type;
   switch (errorType) {
     case 'notOneOf':
@@ -124,36 +124,26 @@ const formErrorHandler = (elems, error) => {
 
 export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
-    const status = value[0];
-    const error = value[1];
     switch (path) {
-      case 'timerId':
-        break;
-      case 'loadingProcess':
-        watchedState.loadingProcess.status = status;
-        watchedState.loadingProcess.error = error;
-        break;
-      case 'form':
-        watchedState.form.status = status;
-        watchedState.form.error = error;
-        break;
       case 'feeds':
         renderFeeds(elems, value);
         break;
       case 'posts':
         renderPosts(elems, value);
         break;
-      case 'loadingProcess.status':
-        loadingProcessStatusHandler(elems, value);
+      case 'loadingProcess':
+        handleLoadingProcessStatus(elems, value.status);
+        handleLoadingProcessError(elems, value.error);
         break;
-      case 'loadingProcess.error':
-        loadingProcessErrorHandler(elems, value);
+      case 'form':
+        handleFormStatus(elems, value.status);
+        handleFormError(elems, value.error);
+        break;
+      case 'loadingProcess.status':
+        handleLoadingProcessStatus(elems, value);
         break;
       case 'form.status':
-        formStatusHandler(elems, value);
-        break;
-      case 'form.error':
-        formErrorHandler(elems, value);
+        handleFormStatus(elems, value);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
