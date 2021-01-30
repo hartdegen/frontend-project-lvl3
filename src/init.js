@@ -2,47 +2,42 @@ import axios from 'axios';
 import i18next from 'i18next';
 import watcher from './watcher.js';
 import resources from './locales.js';
-import checkValidation from './validation.js';
+import checkValidity from './validation.js';
 
-const parseRawRssData = (obj) => {
+const parseRssData = (obj) => {
   const { url } = obj.data.status;
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
-  const channel = rssDataDocument.querySelector('channel');
+  const channel = rssDataDocument.querySelector('rss channel');
   if (channel === null) throw new Error('urlNotValidAsRss');
   return { url, channel };
 };
 
-const processData = (obj, id) => {
+const processData = (obj) => {
   const { url, channel } = obj;
   const title = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
   const items = channel.querySelectorAll('item');
   const posts = [];
   items.forEach((el) => {
-    const pubDate = Date.parse(el.querySelector('pubDate').textContent);
     const postTitle = el.querySelector('title').textContent;
     const link = el.querySelector('link').textContent;
-    posts.push({ pubDate, postTitle, link });
+    posts.push({ postTitle, link });
   });
-  return {
-    feed: {
-      id, url, title, description,
-    },
-    posts: { id, list: posts },
-  };
+  return { feed: { urlAsId: url, title, description }, posts: { urlAsId: url, list: posts } };
 };
 
-const getByProxy = (url) => `${'https://api.allorigins.win/get?url='}${url}`;
+const useProxyTo = (url) => `${'https://api.allorigins.win/get?url='}${url}`;
 
 const fetchNewPosts = (urls, initialState) => {
+  // в процессе обдумывания как переписать функцию
   const watchedState = initialState;
-  const rawRssData = urls.map((url) => axios.get(getByProxy(url))
+  const rawRssData = urls.map((url) => axios.get(useProxyTo(url))
     .catch((e) => { throw new Error(e.message); }));
   return Promise.all(rawRssData)
     .then((raw) => {
-      const data = raw.map(parseRawRssData);
-      const feeds = data.map((value, i) => processData(value, i));
+      const data = raw.map(parseRssData);
+      const feeds = data.map(processData);
       feeds.forEach((val, i) => {
         const posts = watchedState.posts[i];
         if (!posts) {
@@ -105,23 +100,22 @@ export default () => i18next
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const url = e.target.querySelector('input').value;
-      const urls = watchedState.feeds.map((feed) => feed.url);
-      watchedState.form.status = 'submited';
+      const urls = watchedState.feeds.map((feed) => feed.urlAsId);
 
       try {
-        checkValidation(url, urls);
+        checkValidity(url, urls);
       } catch (err) {
         watchedState.form = { status: 'filling', error: err };
         return;
       }
       const validUrls = [...urls, url];
 
+      watchedState.form.status = 'submited';
       watchedState.loadingProcess.status = 'loading';
       Promise.resolve()
         .then(() => fetchNewPosts(validUrls, watchedState))
         .then(() => { watchedState.loadingProcess.status = 'succeed'; })
         .finally(() => { watchedState.form.status = 'filling'; })
-        .finally(() => { console.log(999, state); })
         .catch((err) => { watchedState.loadingProcess = { status: 'failed', error: err }; });
     });
   });
