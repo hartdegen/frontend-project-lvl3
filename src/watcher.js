@@ -33,15 +33,15 @@ const renderFeeds = (elems, feeds) => {
   feedsElem.innerHTML = div.innerHTML;
 };
 
-const renderPosts = (elems, rawPosts) => {
+const renderPosts = (elems, posts) => {
   const { postsElem } = elems;
-  const posts = rawPosts.map((value) => value.list).flat();
+  const list = posts.flat();
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  posts.reverse().forEach(({ postTitle, link }) => {
+  list.reverse().forEach(({ postTitle, link }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = postTitle;
@@ -126,6 +126,9 @@ export default (state, elems) => {
         renderFeeds(elems, value);
         break;
       case 'posts':
+        renderPosts(elems, value);
+        break;
+      case /posts\[\d+]/:
         renderPosts(elems, value);
         break;
       case 'loadingProcess':
