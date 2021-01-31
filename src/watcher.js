@@ -128,9 +128,6 @@ export default (state, elems) => {
       case 'posts':
         renderPosts(elems, value);
         break;
-      case /posts\[\d+]/:
-        renderPosts(elems, value);
-        break;
       case 'loadingProcess':
         handleLoadingProcessStatus(elems, value.status);
         handleLoadingProcessError(elems, value.error);

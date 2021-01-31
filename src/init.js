@@ -28,7 +28,9 @@ const processParsedRssData = (obj) => {
   return { feed: { rssLinkAsId: url, title, description }, posts };
 };
 
-const useProxyTo = (url) => `${'https://api.allorigins.win/get?url='}${url}`;
+// https://hexlet-allorigins.herokuapp.com/get?url=
+// https://api.allorigins.win/get?url=
+const useProxyTo = (url) => `${'https://hexlet-allorigins.herokuapp.com/get?url='}${url}`;
 
 const fetchNewPosts = (urls, initialState) => {
   const watchedState = initialState;
@@ -42,9 +44,18 @@ const fetchNewPosts = (urls, initialState) => {
         watchedState.feeds.push(data.feed);
         watchedState.posts.push(data.posts);
       } else {
-        const existingTitles = postsInState.map((post) => post.title);
-        const newPosts = data.posts.filter((post) => !existingTitles.includes(post.title));
-        if (newPosts.length > 0) { postsInState.push(newPosts); }
+        const existingTitles = postsInState.map((post) => post.postTitle);
+        const newPosts = data.posts.filter((post) => !existingTitles.includes(post.postTitle));
+        if (newPosts.length > 0) {
+          watchedState.posts.map((value, index) => {
+            if (i === index) {
+              const list = value;
+              list.push(...newPosts);
+              return list;
+            }
+            return value;
+          });
+        }
       }
     })
     .catch((e) => { throw new Error(e.message); }));
@@ -52,7 +63,7 @@ const fetchNewPosts = (urls, initialState) => {
     setTimeout(() => {
       if (urls.length !== watchedState.feeds.length) return;
       fetchNewPosts(urls, watchedState);
-    }, 5000);
+    }, 3000);
   });
 };
 
