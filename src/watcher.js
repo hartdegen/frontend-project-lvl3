@@ -1,7 +1,7 @@
 import i18next from 'i18next';
 import onChange from 'on-change';
 
-const signFormElements = (elems) => {
+const signPageElements = (elems) => {
   const {
     formTitle, lead, input, exampleBlock, submitButton,
   } = elems;
@@ -77,9 +77,6 @@ const handleLoadingProcessStatus = (elems, status) => {
 const handleFormStatus = (elems, status) => {
   const { submitButton } = elems;
   switch (status) {
-    case 'formElementsSigned':
-      signFormElements(elems);
-      break;
     case 'submited':
       submitButton.disabled = true;
       break;
@@ -122,6 +119,9 @@ const handleFormError = (elems, error) => {
 export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
     switch (path) {
+      case 'appStatus':
+        signPageElements(elems);
+        break;
       case 'feeds':
         renderFeeds(elems, value);
         break;
