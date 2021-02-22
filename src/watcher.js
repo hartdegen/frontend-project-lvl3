@@ -41,7 +41,7 @@ const renderPosts = (elems, posts) => {
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  list.reverse().forEach(({ postTitle, link }) => {
+  list.forEach(({ postTitle, link }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = postTitle;
@@ -89,11 +89,12 @@ const handleFormStatus = (elems, status) => {
 };
 
 const handleLoadingProcessError = (elems, error) => {
+  if (error.isAxiosError) {
+    renderInfo(elems, 'noConnection', 'Red');
+    return;
+  }
   const errorMessage = error.message;
   switch (errorMessage) {
-    case 'Network Error':
-      renderInfo(elems, 'noConnection', 'Red');
-      break;
     case 'urlNotValidAsRss':
       renderInfo(elems, 'urlNotValidAsRss', 'Red');
       break;
@@ -118,15 +119,14 @@ const handleFormError = (elems, error) => {
 
 export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
+    if (/^posts\.\d+$/.test(path)) {
+      console.log('posts[X]');
+      renderPosts(elems, value);
+      return;
+    }
     switch (path) {
       case 'appStatus':
         signPageElements(elems);
-        break;
-      case 'feeds':
-        renderFeeds(elems, value);
-        break;
-      case 'posts':
-        renderPosts(elems, value);
         break;
       case 'loadingProcess':
         handleLoadingProcessStatus(elems, value.status);
@@ -142,6 +142,16 @@ export default (state, elems) => {
       case 'form.status':
         handleFormStatus(elems, value);
         break;
+      case 'feeds':
+        renderFeeds(elems, value);
+        break;
+      case 'posts':
+        renderPosts(elems, value);
+        break;
+      // case path.match(/^posts\.\d+$/):
+      //   console.log('posts[X]');
+      //   renderPosts(elems, value);
+      //   break;
       default:
         throw new Error(`Unknown path: ${path}`);
     }

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import i18next from 'i18next';
+import * as _ from 'lodash';
 import watcher from './watcher.js';
 import resources from './locales.js';
 import checkValidity from './validation.js';
@@ -10,14 +11,18 @@ const parseRssData = (obj) => {
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('rss channel');
   if (channel === null) throw new Error('urlNotValidAsRss');
-  return { url, channel };
-};
-
-const processParsedRssData = (obj) => {
-  const { url, channel } = obj;
   const title = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
   const items = channel.querySelectorAll('item');
+  return {
+    url, title, description, items,
+  };
+};
+
+const processParsedRssData = (obj) => {
+  const {
+    url, title, description, items,
+  } = obj;
   const posts = [];
   items.forEach((el) => {
     const postTitle = el.querySelector('title').textContent;
@@ -28,31 +33,24 @@ const processParsedRssData = (obj) => {
   return { feed: { rssLinkAsId: url, title, description }, posts };
 };
 
-const useProxyTo = (url) => `${'https://hexlet-allorigins.herokuapp.com/get?url='}${url}`;
+const useProxyTo = (url) => new URL(`${'https://hexlet-allorigins.herokuapp.com/get?url='}${url}`);
 
 const updatePosts = (urls, initialState) => {
+  console.log(111, urls.length, initialState.feeds.length);
   const watchedState = initialState;
   const promises = urls.map((url, i) => axios.get(useProxyTo(url))
     .then((rssData) => {
-      const parsedData = parseRssData(rssData);
-      const data = processParsedRssData(parsedData);
-      const postsInState = watchedState.posts[i];
+      const data = processParsedRssData(parseRssData(rssData));
+      const postsInState = _.cloneDeep(watchedState.posts[i]);
       const existingTitles = postsInState.map((post) => post.postTitle);
-      const newPosts = data.posts.filter((post) => !existingTitles.includes(post.postTitle));
-      if (newPosts.length > 0) {
-        watchedState.posts.map((value, index) => {
-          if (i === index) {
-            const listOfPosts = value;
-            listOfPosts.push(...newPosts);
-            return listOfPosts;
-          }
-          return value;
-        });
-      }
+      const newPosts = _.differenceWith(data.posts, postsInState, _.isEqual)
+        .filter((post) => !existingTitles.includes(post.postTitle));
+      if (newPosts.length > 0) watchedState.posts[i].unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
   Promise.all(promises).then(() => {
     setTimeout(() => {
+      console.log(222, urls.length, watchedState.feeds.length);
       if (urls.length !== watchedState.feeds.length) return;
       updatePosts(urls, watchedState);
     }, 3000);
@@ -67,8 +65,8 @@ const loadFeed = (urls, initialState) => {
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
       const data = processParsedRssData(parsedData);
-      watchedState.feeds.push(data.feed);
-      watchedState.posts.push(data.posts);
+      watchedState.feeds.unshift(data.feed);
+      watchedState.posts.unshift(data.posts);
       watchedState.loadingProcess.status = 'succeed';
       setTimeout(() => { updatePosts(urls, watchedState); }, 3000);
     })
