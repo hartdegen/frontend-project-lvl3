@@ -19,7 +19,7 @@ const parseRssData = (obj) => {
   };
 };
 
-const processParsedRssData = (obj) => {
+const processParsedData = (obj) => {
   const {
     url, title, description, items,
   } = obj;
@@ -35,12 +35,12 @@ const processParsedRssData = (obj) => {
 
 const useProxyTo = (url) => new URL(`${'https://hexlet-allorigins.herokuapp.com/get?url='}${url}`);
 
-const updatePosts = (urls, initialState) => {
-  console.log(111, urls.length, initialState.feeds.length);
+const updateFeeds = (initialState) => {
   const watchedState = initialState;
+  const urls = watchedState.feeds.map((feed) => feed.rssLinkAsId);
   const promises = urls.map((url, i) => axios.get(useProxyTo(url))
     .then((rssData) => {
-      const data = processParsedRssData(parseRssData(rssData));
+      const data = processParsedData(parseRssData(rssData));
       const postsInState = _.cloneDeep(watchedState.posts[i]);
       const existingTitles = postsInState.map((post) => post.postTitle);
       const newPosts = _.differenceWith(data.posts, postsInState, _.isEqual)
@@ -48,13 +48,7 @@ const updatePosts = (urls, initialState) => {
       if (newPosts.length > 0) watchedState.posts[i].unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
-  Promise.all(promises).then(() => {
-    setTimeout(() => {
-      console.log(222, urls.length, watchedState.feeds.length);
-      if (urls.length !== watchedState.feeds.length) return;
-      updatePosts(urls, watchedState);
-    }, 3000);
-  });
+  Promise.all(promises).then(() => { setTimeout(() => updateFeeds(watchedState), 3000); });
 };
 
 const loadFeed = (urls, initialState) => {
@@ -64,11 +58,10 @@ const loadFeed = (urls, initialState) => {
   axios.get(useProxyTo(lastAddedUrl))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = processParsedRssData(parsedData);
+      const data = processParsedData(parsedData);
       watchedState.feeds.unshift(data.feed);
       watchedState.posts.unshift(data.posts);
       watchedState.loadingProcess.status = 'succeed';
-      setTimeout(() => { updatePosts(urls, watchedState); }, 3000);
     })
     .catch((err) => { watchedState.loadingProcess = { status: 'failed', error: err }; })
     .finally(() => { watchedState.form.status = 'filling'; });
@@ -117,7 +110,10 @@ export default () => i18next
         watchedState.form = { status: 'filling', error: err };
         return;
       }
+
       const validUrls = [...urlsFromState, entredUrl];
       loadFeed(validUrls, watchedState);
     });
+
+    updateFeeds(watchedState);
   });

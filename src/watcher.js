@@ -120,7 +120,7 @@ const handleFormError = (elems, error) => {
 export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
     if (/^posts\.\d+$/.test(path)) {
-      console.log('posts[X]');
+      console.log('there is new posts');
       renderPosts(elems, value);
       return;
     }
@@ -148,10 +148,6 @@ export default (state, elems) => {
       case 'posts':
         renderPosts(elems, value);
         break;
-      // case path.match(/^posts\.\d+$/):
-      //   console.log('posts[X]');
-      //   renderPosts(elems, value);
-      //   break;
       default:
         throw new Error(`Unknown path: ${path}`);
     }
