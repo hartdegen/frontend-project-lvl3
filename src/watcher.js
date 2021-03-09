@@ -35,7 +35,7 @@ const renderFeeds = (elems, feeds) => {
 
 const renderPosts = (elems, posts) => {
   const { postsElem } = elems;
-  const list = posts.flat();
+  const list = posts;
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   const ul = document.createElement('ul');
@@ -93,9 +93,9 @@ const handleLoadingProcessError = (elems, error) => {
     renderInfo(elems, 'noConnection', 'Red');
     return;
   }
-  const errorMessage = error.message;
-  switch (errorMessage) {
-    case 'urlNotValidAsRss':
+  const errorName = error.name;
+  switch (errorName) {
+    case 'TypeError':
       renderInfo(elems, 'urlNotValidAsRss', 'Red');
       break;
     default:
@@ -119,11 +119,6 @@ const handleFormError = (elems, error) => {
 
 export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
-    if (/^posts\.\d+$/.test(path)) {
-      console.log('there is new posts');
-      renderPosts(elems, value);
-      return;
-    }
     switch (path) {
       case 'appStatus':
         signPageElements(elems);

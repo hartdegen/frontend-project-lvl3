@@ -1,54 +1,54 @@
+import * as _ from 'lodash';
 import axios from 'axios';
 import i18next from 'i18next';
-import * as _ from 'lodash';
 import watcher from './watcher.js';
 import resources from './locales.js';
 import checkValidity from './validation.js';
 
 const parseRssData = (obj) => {
-  const { url } = obj.data.status;
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const channel = rssDataDocument.querySelector('rss channel');
-  if (channel === null) throw new Error('urlNotValidAsRss');
   const title = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
   const items = channel.querySelectorAll('item');
-  return {
-    url, title, description, items,
-  };
-};
-
-const processParsedData = (obj) => {
-  const {
-    url, title, description, items,
-  } = obj;
-  const posts = [];
+  const rawPosts = [];
   items.forEach((el) => {
     const postTitle = el.querySelector('title').textContent;
     const link = el.querySelector('link').textContent;
-    const rssLinkAsId = url;
-    posts.push({ postTitle, link, rssLinkAsId });
+    rawPosts.push({ postTitle, link });
   });
-  return { feed: { rssLinkAsId: url, title, description }, posts };
+  return { title, description, rawPosts };
 };
 
-const useProxyTo = (url) => new URL(`${'https://hexlet-allorigins.herokuapp.com/get?url='}${url}`);
+const processParsedData = (obj, url) => {
+  const { title, description, rawPosts } = obj;
+  const rssLinkAsId = url;
+  const posts = rawPosts.map((post) => ({ ...post, rssLinkAsId }));
+  return { feed: { rssLinkAsId, title, description }, posts };
+};
+
+const useProxyTo = (url) => {
+  const processedByProxy = new URL('https://hexlet-allorigins.herokuapp.com/get?');
+  processedByProxy.searchParams.set('url', url);
+  return processedByProxy;
+};
 
 const updateFeeds = (initialState) => {
   const watchedState = initialState;
   const urls = watchedState.feeds.map((feed) => feed.rssLinkAsId);
-  const promises = urls.map((url, i) => axios.get(useProxyTo(url))
+  const postsInState = _.cloneDeep(watchedState.posts);
+  const promises = urls.map((url) => axios.get(useProxyTo(url))
     .then((rssData) => {
-      const data = processParsedData(parseRssData(rssData));
-      const postsInState = _.cloneDeep(watchedState.posts[i]);
+      const parsedData = parseRssData(rssData);
+      const data = processParsedData(parsedData, url);
       const existingTitles = postsInState.map((post) => post.postTitle);
       const newPosts = _.differenceWith(data.posts, postsInState, _.isEqual)
         .filter((post) => !existingTitles.includes(post.postTitle));
-      if (newPosts.length > 0) watchedState.posts[i].unshift(...newPosts);
+      watchedState.posts.unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
-  Promise.all(promises).then(() => { setTimeout(() => updateFeeds(watchedState), 3000); });
+  Promise.all(promises).then(() => { setTimeout(() => updateFeeds(watchedState), 5000); });
 };
 
 const loadFeed = (urls, initialState) => {
@@ -58,9 +58,9 @@ const loadFeed = (urls, initialState) => {
   axios.get(useProxyTo(lastAddedUrl))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = processParsedData(parsedData);
+      const data = processParsedData(parsedData, lastAddedUrl);
       watchedState.feeds.unshift(data.feed);
-      watchedState.posts.unshift(data.posts);
+      watchedState.posts.unshift(...data.posts);
       watchedState.loadingProcess.status = 'succeed';
     })
     .catch((err) => { watchedState.loadingProcess = { status: 'failed', error: err }; })
