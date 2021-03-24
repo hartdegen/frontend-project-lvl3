@@ -7,9 +7,9 @@ export default {
       submitButton: 'Add',
       exampleBlock: 'Example: https://news.google.com/news/rss',
 
-      noConnection: 'Network Error',
+      axiosError: 'Network Error',
       succeed: 'Rss has been loaded',
-      urlNotValidAsRss: 'This source does not contain valid rss',
+      parsingError: 'This source does not contain valid rss',
 
       notOneOf: 'Rss already exists',
       url: 'Must be valid url',

@@ -8,23 +8,30 @@ import checkValidity from './validation.js';
 const parseRssData = (obj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
+  const parserError = rssDataDocument.querySelector('parsererror');
+  if (rssDataDocument.contains(parserError)) {
+    const errorText = parserError.querySelector('div').textContent;
+    console.warn(errorText);
+    throw new Error('parsingError');
+  }
+
   const channel = rssDataDocument.querySelector('rss channel');
   const title = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
-  const items = channel.querySelectorAll('item');
-  const rawPosts = [];
-  items.forEach((el) => {
+  const rawItems = channel.querySelectorAll('item');
+  const items = [];
+  rawItems.forEach((el) => {
     const postTitle = el.querySelector('title').textContent;
     const link = el.querySelector('link').textContent;
-    rawPosts.push({ postTitle, link });
+    items.push({ postTitle, link });
   });
-  return { title, description, rawPosts };
+  return { title, description, items };
 };
 
 const processParsedData = (obj, url) => {
-  const { title, description, rawPosts } = obj;
+  const { title, description, items } = obj;
   const rssLinkAsId = url;
-  const posts = rawPosts.map((post) => ({ ...post, rssLinkAsId }));
+  const posts = items.map((post) => ({ ...post, rssLinkAsId }));
   return { feed: { rssLinkAsId, title, description }, posts };
 };
 
@@ -63,7 +70,14 @@ const loadFeed = (urls, initialState) => {
       watchedState.posts.unshift(...data.posts);
       watchedState.loadingProcess.status = 'succeed';
     })
-    .catch((err) => { watchedState.loadingProcess = { status: 'failed', error: err }; })
+    .catch((err) => {
+      const mappingError = { axiosError: 'axiosError', parsingError: 'parsingError' };
+      if (err.isAxiosError) {
+        watchedState.loadingProcess = { status: 'failed', error: mappingError.axiosError };
+      } else {
+        watchedState.loadingProcess = { status: 'failed', error: mappingError[err.message] || err };
+      }
+    })
     .finally(() => { watchedState.form.status = 'filling'; });
 };
 
@@ -107,7 +121,8 @@ export default () => i18next
       try {
         checkValidity(entredUrl, urlsFromState);
       } catch (err) {
-        watchedState.form = { status: 'filling', error: err };
+        const mappingError = { notOneOf: 'notOneOf', url: 'url' };
+        watchedState.form = { status: 'filling', error: mappingError[err.type] || err };
         return;
       }
 

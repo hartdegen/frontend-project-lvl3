@@ -60,6 +60,16 @@ const renderInfo = (elems, statusCase, styleColor, styleBorder = null) => {
   input.style.border = styleBorder;
 };
 
+const handleAppStatus = (elems, status) => {
+  switch (status) {
+    case 'initiated':
+      signPageElements(elems);
+      break;
+    default:
+      throw new Error(`Unknown app status: ${status}`);
+  }
+};
+
 const handleLoadingProcessStatus = (elems, status) => {
   switch (status) {
     case 'loading':
@@ -89,14 +99,12 @@ const handleFormStatus = (elems, status) => {
 };
 
 const handleLoadingProcessError = (elems, error) => {
-  if (error.isAxiosError) {
-    renderInfo(elems, 'noConnection', 'Red');
-    return;
-  }
-  const errorName = error.name;
-  switch (errorName) {
-    case 'TypeError':
-      renderInfo(elems, 'urlNotValidAsRss', 'Red');
+  switch (error) {
+    case 'axiosError':
+      renderInfo(elems, error, 'Red');
+      break;
+    case 'parsingError':
+      renderInfo(elems, error, 'Red');
       break;
     default:
       throw new Error(`Unknown loading process error: ${error}`);
@@ -104,13 +112,12 @@ const handleLoadingProcessError = (elems, error) => {
 };
 
 const handleFormError = (elems, error) => {
-  const errorType = error.type;
-  switch (errorType) {
+  switch (error) {
     case 'notOneOf':
-      renderInfo(elems, 'notOneOf', 'Red');
+      renderInfo(elems, error, 'Red');
       break;
     case 'url':
-      renderInfo(elems, 'url', 'Red', 'thick solid red');
+      renderInfo(elems, error, 'Red', 'thick solid red');
       break;
     default:
       throw new Error(`Unknown form error: ${error}`);
@@ -121,7 +128,7 @@ export default (state, elems) => {
   const watchedState = onChange(state, (path, value) => {
     switch (path) {
       case 'appStatus':
-        signPageElements(elems);
+        handleAppStatus(elems, value);
         break;
       case 'loadingProcess':
         handleLoadingProcessStatus(elems, value.status);
