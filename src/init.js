@@ -78,7 +78,10 @@ const loadFeed = (urls, initialState) => {
       watchedState.loadingProcess.status = 'succeed';
     })
     .catch((err) => {
-      const mappingError = { axiosError: 'axiosError', parsingError: 'parsingError' };
+      const mappingError = {
+        axiosError: 'axiosError',
+        parsingError: 'parsingError',
+      };
       if (err.isAxiosError) {
         watchedState.loadingProcess = { status: 'failed', errorType: mappingError.axiosError };
       } else {
@@ -128,7 +131,7 @@ export default () => i18next
       try {
         checkValidity(entredUrl, urlsFromState);
       } catch (err) {
-        const mappingError = { notOneOf: 'notOneOf', url: 'url' };
+        const mappingError = { notOneOf: 'blacklistError', url: 'unvalidUrlError' };
         watchedState.form = { status: 'filling', errorType: mappingError[err.type] || err };
         return;
       }

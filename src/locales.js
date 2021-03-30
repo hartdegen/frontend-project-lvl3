@@ -8,11 +8,11 @@ export default {
       exampleBlock: 'Example: https://news.google.com/news/rss',
 
       axiosError: 'Network Error',
-      succeed: 'Rss has been loaded',
       parsingError: 'This source does not contain valid rss',
+      succeed: 'Rss has been loaded',
 
-      notOneOf: 'Rss already exists',
-      url: 'Must be valid url',
+      blacklistError: 'Rss already exists',
+      unvalidUrlError: 'Must be valid url',
     },
   },
 };

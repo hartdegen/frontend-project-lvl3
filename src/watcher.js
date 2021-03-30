@@ -113,10 +113,10 @@ const handleLoadingProcessError = (elems, error) => {
 
 const handleFormError = (elems, error) => {
   switch (error) {
-    case 'notOneOf':
+    case 'blacklistError':
       renderInfo(elems, error, 'Red');
       break;
-    case 'url':
+    case 'unvalidUrlError':
       renderInfo(elems, error, 'Red', 'thick solid red');
       break;
     default:
@@ -131,7 +131,6 @@ export default (state, elems) => {
         handleAppStatus(elems, value);
         break;
       case 'loadingProcess':
-        console.log(11111, value)
         handleLoadingProcessStatus(elems, value.status);
         handleLoadingProcessError(elems, value.errorType);
         break;
