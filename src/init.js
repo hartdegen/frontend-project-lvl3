@@ -83,9 +83,9 @@ const loadFeed = (urls, initialState) => {
         parsingError: 'parsingError',
       };
       if (err.isAxiosError) {
-        watchedState.loadingProcess = { status: 'failed', errorType: mappingError.axiosError };
+        watchedState.loadingProcess = { status: 'failed', error: mappingError.axiosError };
       } else {
-        watchedState.loadingProcess = { status: 'failed', errorType: mappingError[err.type] || err };
+        watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || err };
       }
     })
     .finally(() => { watchedState.form.status = 'filling'; });
@@ -131,8 +131,7 @@ export default () => i18next
       try {
         checkValidity(entredUrl, urlsFromState);
       } catch (err) {
-        const mappingError = { notOneOf: 'blacklistError', url: 'unvalidUrlError' };
-        watchedState.form = { status: 'filling', errorType: mappingError[err.type] || err };
+        watchedState.form = { status: 'filling', error: err.message || err };
         return;
       }
 
