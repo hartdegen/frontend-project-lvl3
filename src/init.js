@@ -5,16 +5,23 @@ import watcher from './watcher.js';
 import resources from './locales.js';
 import checkValidity from './validation.js';
 
+class ParsingError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ParsingError';
+    this.type = 'parsingError';
+  }
+}
+// наверно, подклассы ошибок стоит выделить в отдельный модуль, но пока пусть будет здесь
+
 const parseRssData = (obj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
   if (rssDataDocument.contains(parserError)) {
     const errorText = parserError.querySelector('div').textContent;
-    console.warn(errorText);
-    throw new Error('parsingError');
+    throw new ParsingError(errorText);
   }
-
   const channel = rssDataDocument.querySelector('rss channel');
   const title = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
@@ -73,9 +80,9 @@ const loadFeed = (urls, initialState) => {
     .catch((err) => {
       const mappingError = { axiosError: 'axiosError', parsingError: 'parsingError' };
       if (err.isAxiosError) {
-        watchedState.loadingProcess = { status: 'failed', error: mappingError.axiosError };
+        watchedState.loadingProcess = { status: 'failed', errorType: mappingError.axiosError };
       } else {
-        watchedState.loadingProcess = { status: 'failed', error: mappingError[err.message] || err };
+        watchedState.loadingProcess = { status: 'failed', errorType: mappingError[err.type] || err };
       }
     })
     .finally(() => { watchedState.form.status = 'filling'; });
@@ -122,7 +129,7 @@ export default () => i18next
         checkValidity(entredUrl, urlsFromState);
       } catch (err) {
         const mappingError = { notOneOf: 'notOneOf', url: 'url' };
-        watchedState.form = { status: 'filling', error: mappingError[err.type] || err };
+        watchedState.form = { status: 'filling', errorType: mappingError[err.type] || err };
         return;
       }
 

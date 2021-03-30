@@ -131,12 +131,13 @@ export default (state, elems) => {
         handleAppStatus(elems, value);
         break;
       case 'loadingProcess':
+        console.log(11111, value)
         handleLoadingProcessStatus(elems, value.status);
-        handleLoadingProcessError(elems, value.error);
+        handleLoadingProcessError(elems, value.errorType);
         break;
       case 'form':
         handleFormStatus(elems, value.status);
-        handleFormError(elems, value.error);
+        handleFormError(elems, value.errorType);
         break;
       case 'loadingProcess.status':
         handleLoadingProcessStatus(elems, value);
