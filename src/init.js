@@ -23,23 +23,27 @@ const parseRssData = (obj) => {
     throw new ParsingError(errorText);
   }
   const channel = rssDataDocument.querySelector('rss channel');
-  const title = channel.querySelector('title').textContent;
+  const channelTitle = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
   const rawItems = channel.querySelectorAll('item');
   const items = [];
   rawItems.forEach((el) => {
-    const postTitle = el.querySelector('title').textContent;
+    const title = el.querySelector('title').textContent;
     const link = el.querySelector('link').textContent;
-    items.push({ postTitle, link });
+    items.push({ title, link });
   });
-  return { title, description, items };
+  return { channelTitle, description, items };
 };
 
-const processParsedData = (obj, url) => {
-  const { title, description, items } = obj;
-  const rssLinkAsId = url;
-  const posts = items.map((post) => ({ ...post, rssLinkAsId }));
-  return { feed: { rssLinkAsId, title, description }, posts };
+const processParsedData = (obj, url, id) => {
+  const { channelTitle, description, items } = obj;
+  const posts = items.map((post) => ({ ...post, url, id }));
+  return {
+    feed: {
+      url, id, channelTitle, description,
+    },
+    posts,
+  };
 };
 
 const useProxyTo = (url) => {
@@ -50,15 +54,15 @@ const useProxyTo = (url) => {
 
 const updateFeeds = (initialState) => {
   const watchedState = initialState;
-  const urls = watchedState.feeds.map((feed) => feed.rssLinkAsId);
+  const urlsWithId = watchedState.feeds.map((feed) => ({ url: feed.url, id: feed.id }));
   const postsInState = _.cloneDeep(watchedState.posts);
-  const promises = urls.map((url) => axios.get(useProxyTo(url))
+  const promises = urlsWithId.map(({ url, id }) => axios.get(useProxyTo(url))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = processParsedData(parsedData, url);
-      const existingTitles = postsInState.map((post) => post.postTitle);
+      const data = processParsedData(parsedData, url, id);
+      const existingTitles = postsInState.map((post) => post.title);
       const newPosts = _.differenceWith(data.posts, postsInState, _.isEqual)
-        .filter((post) => !existingTitles.includes(post.postTitle));
+        .filter((post) => !existingTitles.includes(post.title));
       watchedState.posts.unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
@@ -66,13 +70,14 @@ const updateFeeds = (initialState) => {
 };
 
 const loadFeed = (urls, initialState) => {
+  const id = _.uniqueId();
   const watchedState = initialState;
   watchedState.loadingProcess.status = 'loading';
   const lastAddedUrl = urls[urls.length - 1];
   axios.get(useProxyTo(lastAddedUrl))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = processParsedData(parsedData, lastAddedUrl);
+      const data = processParsedData(parsedData, lastAddedUrl, id);
       watchedState.feeds.unshift(data.feed);
       watchedState.posts.unshift(...data.posts);
       watchedState.loadingProcess.status = 'succeed';
@@ -126,7 +131,7 @@ export default () => i18next
       watchedState.form.status = 'submited';
       const formData = new FormData(e.target);
       const entredUrl = formData.get('url');
-      const urlsFromState = watchedState.feeds.map((feed) => feed.rssLinkAsId);
+      const urlsFromState = watchedState.feeds.map((feed) => feed.url);
 
       try {
         checkValidity(entredUrl, urlsFromState);

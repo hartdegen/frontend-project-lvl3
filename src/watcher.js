@@ -19,10 +19,10 @@ const renderFeeds = (elems, feeds) => {
   h2.textContent = 'Feeds';
   div.appendChild(h2);
   const ul = document.createElement('ul');
-  feeds.forEach(({ title, description }) => {
+  feeds.forEach(({ channelTitle, description }) => {
     const h3 = document.createElement('h3');
     const p = document.createElement('p');
-    h3.textContent = title;
+    h3.textContent = channelTitle;
     p.textContent = description;
     const li = document.createElement('li');
     li.appendChild(h3);
@@ -41,10 +41,10 @@ const renderPosts = (elems, posts) => {
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  list.forEach(({ postTitle, link }) => {
+  list.forEach(({ title, link }) => {
     const a = document.createElement('a');
     a.href = link;
-    a.textContent = postTitle;
+    a.textContent = title;
     const li = document.createElement('li');
     li.appendChild(a);
     ul.appendChild(li);
