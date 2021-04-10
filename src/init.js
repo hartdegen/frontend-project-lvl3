@@ -5,11 +5,11 @@ import watcher from './watcher.js';
 import resources from './locales.js';
 import checkValidity from './validation.js';
 
-class ParsingError extends Error {
+class UnvalidRssLinkError extends Error {
   constructor(message) {
     super(message);
-    this.name = 'ParsingError';
-    this.type = 'parsingError';
+    this.name = 'Unvalid Rss Link Error';
+    this.type = 'unvalidRssLinkError';
   }
 }
 // наверно, подклассы ошибок стоит выделить в отдельный модуль, но пока пусть будет здесь
@@ -20,7 +20,7 @@ const parseRssData = (obj) => {
   const parserError = rssDataDocument.querySelector('parsererror');
   if (rssDataDocument.contains(parserError)) {
     const errorText = parserError.querySelector('div').textContent;
-    throw new ParsingError(errorText);
+    throw new UnvalidRssLinkError(errorText);
   }
   const channel = rssDataDocument.querySelector('rss channel');
   const channelTitle = channel.querySelector('title').textContent;
@@ -52,16 +52,19 @@ const useProxyTo = (url) => {
   return processedByProxy;
 };
 
+const convertProxyObjToPlain = (proxyObj) => _.cloneDeep(proxyObj);
+
 const updateFeeds = (initialState) => {
   const watchedState = initialState;
   const urlsWithId = watchedState.feeds.map((feed) => ({ url: feed.url, id: feed.id }));
-  const postsInState = _.cloneDeep(watchedState.posts);
+  const allExistingPosts = convertProxyObjToPlain(watchedState.posts);
   const promises = urlsWithId.map(({ url, id }) => axios.get(useProxyTo(url))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
       const data = processParsedData(parsedData, url, id);
-      const existingTitles = postsInState.map((post) => post.title);
-      const newPosts = _.differenceWith(data.posts, postsInState, _.isEqual)
+      const postsFiltredByFeed = allExistingPosts.filter((post) => post.id === id);
+      const existingTitles = postsFiltredByFeed.map((post) => post.title);
+      const newPosts = _.differenceWith(data.posts, postsFiltredByFeed, _.isEqual)
         .filter((post) => !existingTitles.includes(post.title));
       watchedState.posts.unshift(...newPosts);
     })
@@ -72,7 +75,7 @@ const updateFeeds = (initialState) => {
 const loadFeed = (urls, initialState) => {
   const id = _.uniqueId();
   const watchedState = initialState;
-  watchedState.loadingProcess.status = 'loading';
+  watchedState.loadingProcess = { status: 'loading' };
   const lastAddedUrl = urls[urls.length - 1];
   axios.get(useProxyTo(lastAddedUrl))
     .then((rssData) => {
@@ -80,20 +83,20 @@ const loadFeed = (urls, initialState) => {
       const data = processParsedData(parsedData, lastAddedUrl, id);
       watchedState.feeds.unshift(data.feed);
       watchedState.posts.unshift(...data.posts);
-      watchedState.loadingProcess.status = 'succeed';
+      watchedState.loadingProcess = { status: 'succeed' };
     })
     .catch((err) => {
       const mappingError = {
-        axiosError: 'axiosError',
-        parsingError: 'parsingError',
+        networkError: 'networkError',
+        unvalidRssLinkError: 'unvalidRssLinkError',
       };
       if (err.isAxiosError) {
-        watchedState.loadingProcess = { status: 'failed', error: mappingError.axiosError };
+        watchedState.loadingProcess = { status: 'failed', error: mappingError.networkError };
       } else {
         watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || err };
       }
     })
-    .finally(() => { watchedState.form.status = 'filling'; });
+    .finally(() => { watchedState.form = { status: 'filling' }; });
 };
 
 export default () => i18next
@@ -128,7 +131,7 @@ export default () => i18next
 
     elems.form.addEventListener('submit', (e) => {
       e.preventDefault();
-      watchedState.form.status = 'submited';
+      watchedState.form = { status: 'submited' };
       const formData = new FormData(e.target);
       const entredUrl = formData.get('url');
       const urlsFromState = watchedState.feeds.map((feed) => feed.url);

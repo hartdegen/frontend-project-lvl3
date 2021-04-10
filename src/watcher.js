@@ -70,7 +70,8 @@ const handleAppStatus = (elems, status) => {
   }
 };
 
-const handleLoadingProcessStatus = (elems, status) => {
+const handleLoadingProcess = (elems, value) => {
+  const { status, error } = value;
   switch (status) {
     case 'loading':
       break;
@@ -82,9 +83,21 @@ const handleLoadingProcessStatus = (elems, status) => {
     default:
       throw new Error(`Unknown loading process status: ${status}`);
   }
+  if (!error) return;
+  switch (error) {
+    case 'networkError':
+      renderInfo(elems, error, 'Red');
+      break;
+    case 'unvalidRssLinkError':
+      renderInfo(elems, error, 'Red');
+      break;
+    default:
+      throw new Error(`Unknown loading process error: ${error}`);
+  }
 };
 
-const handleFormStatus = (elems, status) => {
+const handleForm = (elems, value) => {
+  const { status, error } = value;
   const { submitButton } = elems;
   switch (status) {
     case 'submited':
@@ -96,22 +109,7 @@ const handleFormStatus = (elems, status) => {
     default:
       throw new Error(`Unknown form status: ${status}`);
   }
-};
-
-const handleLoadingProcessError = (elems, error) => {
-  switch (error) {
-    case 'axiosError':
-      renderInfo(elems, error, 'Red');
-      break;
-    case 'parsingError':
-      renderInfo(elems, error, 'Red');
-      break;
-    default:
-      throw new Error(`Unknown loading process error: ${error}`);
-  }
-};
-
-const handleFormError = (elems, error) => {
+  if (!error) return;
   switch (error) {
     case 'blacklistError':
       renderInfo(elems, error, 'Red');
@@ -131,18 +129,10 @@ export default (state, elems) => {
         handleAppStatus(elems, value);
         break;
       case 'loadingProcess':
-        handleLoadingProcessStatus(elems, value.status);
-        handleLoadingProcessError(elems, value.error);
+        handleLoadingProcess(elems, value);
         break;
       case 'form':
-        handleFormStatus(elems, value.status);
-        handleFormError(elems, value.error);
-        break;
-      case 'loadingProcess.status':
-        handleLoadingProcessStatus(elems, value);
-        break;
-      case 'form.status':
-        handleFormStatus(elems, value);
+        handleForm(elems, value);
         break;
       case 'feeds':
         renderFeeds(elems, value);
