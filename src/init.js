@@ -52,20 +52,17 @@ const useProxyTo = (url) => {
   return processedByProxy;
 };
 
-const convertProxyObjToPlain = (proxyObj) => _.cloneDeep(proxyObj);
-
 const updateFeeds = (initialState) => {
   const watchedState = initialState;
   const urlsWithId = watchedState.feeds.map((feed) => ({ url: feed.url, id: feed.id }));
-  const allExistingPosts = convertProxyObjToPlain(watchedState.posts);
   const promises = urlsWithId.map(({ url, id }) => axios.get(useProxyTo(url))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
       const data = processParsedData(parsedData, url, id);
-      const postsFiltredByFeed = allExistingPosts.filter((post) => post.id === id);
-      const existingTitles = postsFiltredByFeed.map((post) => post.title);
-      const newPosts = _.differenceWith(data.posts, postsFiltredByFeed, _.isEqual)
-        .filter((post) => !existingTitles.includes(post.title));
+      const posts = watchedState.posts.filter((post) => post.id === id);
+      const titles = posts.map((post) => post.title);
+      const newPosts = _.differenceWith(data.posts, posts, _.isEqual)
+        .filter((post) => !titles.includes(post.title));
       watchedState.posts.unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
