@@ -53,11 +53,10 @@ const renderPosts = (elems, posts) => {
   postsElem.innerHTML = div.innerHTML;
 };
 
-const renderInfo = (elems, statusCase, styleColor, styleBorder = null) => {
-  const { loadingInfo, input } = elems;
+const renderLoadingInfoElement = (elems, statusCase, styleColor) => {
+  const { loadingInfo } = elems;
   loadingInfo.textContent = i18next.t(statusCase);
   loadingInfo.style.color = styleColor;
-  input.style.border = styleBorder;
 };
 
 const handleAppStatus = (elems, status) => {
@@ -76,7 +75,7 @@ const handleLoadingProcess = (elems, value) => {
     case 'loading':
       break;
     case 'succeed':
-      renderInfo(elems, 'succeed', 'Green');
+      renderLoadingInfoElement(elems, 'succeed', 'Green');
       break;
     case 'failed':
       break;
@@ -86,10 +85,8 @@ const handleLoadingProcess = (elems, value) => {
   if (!error) return;
   switch (error) {
     case 'networkError':
-      renderInfo(elems, error, 'Red');
-      break;
     case 'unvalidRssLinkError':
-      renderInfo(elems, error, 'Red');
+      renderLoadingInfoElement(elems, error, 'Red');
       break;
     default:
       throw new Error(`Unknown loading process error: ${error}`);
@@ -98,7 +95,8 @@ const handleLoadingProcess = (elems, value) => {
 
 const handleForm = (elems, value) => {
   const { status, error } = value;
-  const { submitButton } = elems;
+  const { submitButton, input } = elems;
+  input.style.border = null;
   switch (status) {
     case 'submited':
       submitButton.disabled = true;
@@ -112,10 +110,9 @@ const handleForm = (elems, value) => {
   if (!error) return;
   switch (error) {
     case 'blacklistError':
-      renderInfo(elems, error, 'Red');
-      break;
     case 'unvalidUrlError':
-      renderInfo(elems, error, 'Red', 'thick solid red');
+      renderLoadingInfoElement(elems, error, 'Red');
+      input.style.border = 'thick solid red';
       break;
     default:
       throw new Error(`Unknown form error: ${error}`);

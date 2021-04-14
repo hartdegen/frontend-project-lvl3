@@ -3,16 +3,7 @@ import axios from 'axios';
 import i18next from 'i18next';
 import watcher from './watcher.js';
 import resources from './locales.js';
-import checkValidity from './validation.js';
-
-class UnvalidRssLinkError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'Unvalid Rss Link Error';
-    this.type = 'unvalidRssLinkError';
-  }
-}
-// наверно, подклассы ошибок стоит выделить в отдельный модуль, но пока пусть будет здесь
+import validate from './validation.js';
 
 const parseRssData = (obj) => {
   const parser = new DOMParser();
@@ -20,22 +11,22 @@ const parseRssData = (obj) => {
   const parserError = rssDataDocument.querySelector('parsererror');
   if (rssDataDocument.contains(parserError)) {
     const errorText = parserError.querySelector('div').textContent;
-    throw new UnvalidRssLinkError(errorText);
+    console.warn(errorText);
+    throw new Error('unvalidRssLinkError');
   }
   const channel = rssDataDocument.querySelector('rss channel');
   const channelTitle = channel.querySelector('title').textContent;
   const description = channel.querySelector('description').textContent;
   const rawItems = channel.querySelectorAll('item');
-  const items = [];
-  rawItems.forEach((el) => {
-    const title = el.querySelector('title').textContent;
-    const link = el.querySelector('link').textContent;
-    items.push({ title, link });
+  const items = [...rawItems].map((rawItem) => {
+    const title = rawItem.querySelector('title').textContent;
+    const link = rawItem.querySelector('link').textContent;
+    return { title, link };
   });
   return { channelTitle, description, items };
 };
 
-const processParsedData = (obj, url, id) => {
+const makeFeed = (obj, url, id) => {
   const { channelTitle, description, items } = obj;
   const posts = items.map((post) => ({ ...post, url, id }));
   return {
@@ -49,16 +40,16 @@ const processParsedData = (obj, url, id) => {
 const useProxyTo = (url) => {
   const processedByProxy = new URL('https://hexlet-allorigins.herokuapp.com/get?');
   processedByProxy.searchParams.set('url', url);
+  processedByProxy.searchParams.set('disableCache', true);
   return processedByProxy;
 };
 
 const updateFeeds = (initialState) => {
   const watchedState = initialState;
-  const urlsWithId = watchedState.feeds.map((feed) => ({ url: feed.url, id: feed.id }));
-  const promises = urlsWithId.map(({ url, id }) => axios.get(useProxyTo(url))
+  const promises = watchedState.feeds.map(({ url, id }) => axios.get(useProxyTo(url))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = processParsedData(parsedData, url, id);
+      const data = makeFeed(parsedData, url, id);
       const posts = watchedState.posts.filter((post) => post.id === id);
       const titles = posts.map((post) => post.title);
       const newPosts = _.differenceWith(data.posts, posts, _.isEqual)
@@ -77,7 +68,7 @@ const loadFeed = (urls, initialState) => {
   axios.get(useProxyTo(lastAddedUrl))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = processParsedData(parsedData, lastAddedUrl, id);
+      const data = makeFeed(parsedData, lastAddedUrl, id);
       watchedState.feeds.unshift(data.feed);
       watchedState.posts.unshift(...data.posts);
       watchedState.loadingProcess = { status: 'succeed' };
@@ -90,7 +81,7 @@ const loadFeed = (urls, initialState) => {
       if (err.isAxiosError) {
         watchedState.loadingProcess = { status: 'failed', error: mappingError.networkError };
       } else {
-        watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || err };
+        watchedState.loadingProcess = { status: 'failed', error: mappingError[err.message] || err };
       }
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
@@ -134,7 +125,7 @@ export default () => i18next
       const urlsFromState = watchedState.feeds.map((feed) => feed.url);
 
       try {
-        checkValidity(entredUrl, urlsFromState);
+        validate(entredUrl, urlsFromState);
       } catch (err) {
         watchedState.form = { status: 'filling', error: err.message || err };
         return;
