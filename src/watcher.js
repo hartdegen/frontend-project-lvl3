@@ -1,4 +1,3 @@
-import * as _ from 'lodash';
 import i18next from 'i18next';
 import onChange from 'on-change';
 
@@ -37,24 +36,20 @@ const renderFeeds = (elems, feeds) => {
 const renderPosts = (elems, posts, initialState) => {
   const watchedState = initialState;
   const { postsElem } = elems;
-  const list = posts;
   const div = document.createElement('div');
   const h2 = document.createElement('h2');
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  list.forEach((post) => {
-    const {
-      title, link, linkDescription, postId,
-    } = post;
+  posts.forEach(({
+    title, link, linkDescription, postId,
+  }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
     if (watchedState.openedPosts.includes(postId)) {
       a.classList.add('font-weight-normal');
-    } else {
-      a.classList.add('font-weight-bold');
-    }
+    } else { a.classList.add('font-weight-bold'); }
     a.setAttribute('data-id', postId);
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
@@ -75,22 +70,27 @@ const renderPosts = (elems, posts, initialState) => {
   });
   div.append(ul);
   postsElem.innerHTML = div.innerHTML;
-  const previewButtons = postsElem.querySelectorAll('.previewButton');
-  previewButtons.forEach((el) => el.addEventListener('click', () => {
-    const modal = document.querySelector('.modal');
-    const modalTitle = modal.querySelector('.modal-title');
-    const modalBody = modal.querySelector('.modal-body');
-    const a = modal.querySelector('a');
-    const liElem = el.parentElement;
-    const liA = liElem.querySelector('a');
-    modalTitle.textContent = liElem.querySelector('a').textContent;
-    modalBody.textContent = liElem.querySelector('span').textContent;
-    a.href = liElem.querySelector('a').href;
-    liA.classList.remove('font-weight-bold');
-    liA.classList.add('font-weight-normal');
-    const postId = liA.getAttribute('data-id');
+  const liElems = postsElem.querySelectorAll('li');
+  liElems.forEach((li) => li.addEventListener('click', () => {
+    const postId = li.querySelector('a').getAttribute('data-id');
     watchedState.openedPosts.push(postId);
   }));
+};
+
+const renderModalPreview = (initialState) => {
+  const watchedState = initialState;
+  const lastOpenedPostId = watchedState.openedPosts[watchedState.openedPosts.length - 1];
+  const modal = document.querySelector('.modal');
+  const modalTitle = modal.querySelector('.modal-title');
+  const modalBody = modal.querySelector('.modal-body');
+  const modalA = modal.querySelector('a');
+  const li = document.querySelector(`[data-id=${lastOpenedPostId}]`).parentElement;
+  const liA = li.querySelector('a');
+  modalTitle.textContent = li.querySelector('a').textContent;
+  modalBody.textContent = li.querySelector('span').textContent;
+  modalA.href = li.querySelector('a').href;
+  liA.classList.remove('font-weight-bold');
+  liA.classList.add('font-weight-normal');
 };
 
 const renderLoadingInfoElement = (elems, statusCase, styleColor) => {
@@ -178,6 +178,7 @@ export default (state, elems) => {
         renderPosts(elems, value, watchedState);
         break;
       case 'openedPosts':
+        renderModalPreview(watchedState);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
