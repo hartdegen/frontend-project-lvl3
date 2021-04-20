@@ -21,17 +21,20 @@ const parseRssData = (obj) => {
   const items = [...rawItems].map((rawItem) => {
     const title = rawItem.querySelector('title').textContent;
     const link = rawItem.querySelector('link').textContent;
-    return { title, link };
+    const linkDescription = rawItem.querySelector('description').textContent;
+    return { title, link, linkDescription };
   });
   return { channelTitle, description, items };
 };
 
-const makeFeed = (obj, url, id) => {
+const makeFeed = (obj, url, feedId, postId) => {
   const { channelTitle, description, items } = obj;
-  const posts = items.map((post) => ({ ...post, url, id }));
+  const posts = items.map((post) => ({
+    ...post, url, feedId, postId,
+  }));
   return {
     feed: {
-      url, id, channelTitle, description,
+      url, feedId, channelTitle, description,
     },
     posts,
   };
@@ -44,16 +47,24 @@ const useProxyTo = (url) => {
   return processedByProxy;
 };
 
+const setIdToEveryPost = (post) => {
+  const postWithId = post;
+  const postId = _.uniqueId('post');
+  postWithId.postId = postId;
+  return postWithId;
+};
+
 const updateFeeds = (initialState) => {
   const watchedState = initialState;
-  const promises = watchedState.feeds.map(({ url, id }) => axios.get(useProxyTo(url))
+  const promises = watchedState.feeds.map(({ url, feedId }) => axios.get(useProxyTo(url))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = makeFeed(parsedData, url, id);
-      const posts = watchedState.posts.filter((post) => post.id === id);
+      const data = makeFeed(parsedData, url, feedId);
+      const posts = watchedState.posts.filter((post) => post.feedId === feedId);
       const titles = posts.map((post) => post.title);
       const newPosts = _.differenceWith(data.posts, posts, _.isEqual)
-        .filter((post) => !titles.includes(post.title));
+        .filter((post) => !titles.includes(post.title))
+        .map(setIdToEveryPost);
       watchedState.posts.unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
@@ -61,16 +72,18 @@ const updateFeeds = (initialState) => {
 };
 
 const loadFeed = (urls, initialState) => {
-  const id = _.uniqueId();
+  const feedId = _.uniqueId('feed');
   const watchedState = initialState;
   watchedState.loadingProcess = { status: 'loading' };
   const lastAddedUrl = urls[urls.length - 1];
   axios.get(useProxyTo(lastAddedUrl))
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = makeFeed(parsedData, lastAddedUrl, id);
-      watchedState.feeds.unshift(data.feed);
-      watchedState.posts.unshift(...data.posts);
+      const data = makeFeed(parsedData, lastAddedUrl, feedId);
+      const { feed } = data;
+      const posts = data.posts.map(setIdToEveryPost);
+      watchedState.feeds.unshift(feed);
+      watchedState.posts.unshift(...posts);
       watchedState.loadingProcess = { status: 'succeed' };
     })
     .catch((err) => {
@@ -100,6 +113,7 @@ export default () => i18next
       form: { status: 'filling', error: null },
       feeds: [],
       posts: [],
+      openedPosts: [],
     };
 
     const elems = {

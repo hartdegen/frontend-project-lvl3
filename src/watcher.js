@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import i18next from 'i18next';
 import onChange from 'on-change';
 
@@ -33,7 +34,8 @@ const renderFeeds = (elems, feeds) => {
   feedsElem.innerHTML = div.innerHTML;
 };
 
-const renderPosts = (elems, posts) => {
+const renderPosts = (elems, posts, initialState) => {
+  const watchedState = initialState;
   const { postsElem } = elems;
   const list = posts;
   const div = document.createElement('div');
@@ -41,16 +43,54 @@ const renderPosts = (elems, posts) => {
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  list.forEach(({ title, link }) => {
+  list.forEach((post) => {
+    const {
+      title, link, linkDescription, postId,
+    } = post;
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
+    if (watchedState.openedPosts.includes(postId)) {
+      a.classList.add('font-weight-normal');
+    } else {
+      a.classList.add('font-weight-bold');
+    }
+    a.setAttribute('data-id', postId);
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+    const hiddenDescription = document.createElement('span');
+    hiddenDescription.textContent = linkDescription;
+    hiddenDescription.hidden = true;
+    const previewButton = document.createElement('button');
+    previewButton.textContent = i18next.t('modalPreviewButton');
+    previewButton.classList.add('btn', 'btn-primary', 'previewButton');
+    previewButton.setAttribute('type', 'button');
+    previewButton.setAttribute('data-bs-toggle', 'modal');
+    previewButton.setAttribute('data-bs-target', '#exampleModal');
     const li = document.createElement('li');
     li.appendChild(a);
+    li.appendChild(previewButton);
+    li.appendChild(hiddenDescription);
     ul.appendChild(li);
   });
   div.append(ul);
   postsElem.innerHTML = div.innerHTML;
+  const previewButtons = postsElem.querySelectorAll('.previewButton');
+  previewButtons.forEach((el) => el.addEventListener('click', () => {
+    const modal = document.querySelector('.modal');
+    const modalTitle = modal.querySelector('.modal-title');
+    const modalBody = modal.querySelector('.modal-body');
+    const a = modal.querySelector('a');
+    const liElem = el.parentElement;
+    const liA = liElem.querySelector('a');
+    modalTitle.textContent = liElem.querySelector('a').textContent;
+    modalBody.textContent = liElem.querySelector('span').textContent;
+    a.href = liElem.querySelector('a').href;
+    liA.classList.remove('font-weight-bold');
+    liA.classList.add('font-weight-normal');
+    const postId = liA.getAttribute('data-id');
+    watchedState.openedPosts.push(postId);
+  }));
 };
 
 const renderLoadingInfoElement = (elems, statusCase, styleColor) => {
@@ -135,7 +175,9 @@ export default (state, elems) => {
         renderFeeds(elems, value);
         break;
       case 'posts':
-        renderPosts(elems, value);
+        renderPosts(elems, value, watchedState);
+        break;
+      case 'openedPosts':
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
