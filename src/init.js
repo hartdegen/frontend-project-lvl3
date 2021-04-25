@@ -27,11 +27,9 @@ const parseRssData = (obj) => {
   return { channelTitle, description, items };
 };
 
-const makeFeed = (obj, url, feedId, postId) => {
+const makeFeed = (obj, url, feedId) => {
   const { channelTitle, description, items } = obj;
-  const posts = items.map((post) => ({
-    ...post, url, feedId, postId,
-  }));
+  const posts = items.map((post) => ({ ...post, url, feedId }));
   return {
     feed: {
       url, feedId, channelTitle, description,
@@ -54,21 +52,27 @@ const setIdToEveryPost = (post) => {
   return postWithId;
 };
 
-const updateFeeds = (initialState) => {
+const handlePostsPreview = (initialState) => {
   const watchedState = initialState;
-  const promises = watchedState.feeds.map(({ url, feedId }) => axios.get(useProxyTo(url))
-    .then((rssData) => {
-      const parsedData = parseRssData(rssData);
-      const data = makeFeed(parsedData, url, feedId);
-      const posts = watchedState.posts.filter((post) => post.feedId === feedId);
-      const titles = posts.map((post) => post.title);
-      const newPosts = _.differenceWith(data.posts, posts, _.isEqual)
-        .filter((post) => !titles.includes(post.title))
-        .map(setIdToEveryPost);
-      watchedState.posts.unshift(...newPosts);
-    })
-    .catch((e) => { console.warn(e); }));
-  Promise.all(promises).then(() => { setTimeout(() => updateFeeds(watchedState), 5000); });
+  document.body.addEventListener('click', (e) => {
+    const postId = e.target.classList.contains('previewButton')
+      ? e.target.getAttribute('data-id')
+      : false;
+    if (postId) {
+      watchedState.modal = {
+        selectedPostId: postId,
+        onceSelectedPosts: _.uniq([...watchedState.modal.onceSelectedPosts, postId]),
+      };
+    } else if (document.body.classList.contains('modal-open')) {
+      const modalContent = e.target.closest('.modal-content');
+      if (modalContent === null) {
+        watchedState.modal = {
+          selectedPostId: null,
+          onceSelectedPosts: [...watchedState.modal.onceSelectedPosts],
+        };
+      }
+    }
+  });
 };
 
 const loadFeed = (urls, initialState) => {
@@ -100,6 +104,23 @@ const loadFeed = (urls, initialState) => {
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
 
+const updateFeeds = (initialState) => {
+  const watchedState = initialState;
+  const promises = watchedState.feeds.map(({ url, feedId }) => axios.get(useProxyTo(url))
+    .then((rssData) => {
+      const parsedData = parseRssData(rssData);
+      const data = makeFeed(parsedData, url, feedId);
+      const posts = watchedState.posts.filter((post) => post.feedId === feedId);
+      const titles = posts.map((post) => post.title);
+      const newPosts = _.differenceWith(data.posts, posts, _.isEqual)
+        .filter((post) => !titles.includes(post.title))
+        .map(setIdToEveryPost);
+      watchedState.posts.unshift(...newPosts);
+    })
+    .catch((e) => { console.warn(e); }));
+  Promise.all(promises).then(() => { setTimeout(() => updateFeeds(watchedState), 5000); });
+};
+
 export default () => i18next
   .init({
     lng: 'en',
@@ -113,10 +134,13 @@ export default () => i18next
       form: { status: 'filling', error: null },
       feeds: [],
       posts: [],
-      openedPosts: [],
+      modal: { selectedPostId: null, onceSelectedPosts: [] },
     };
 
     const elems = {
+      modalTitle: document.querySelector('.modal-title'),
+      modalBody: document.querySelector('.modal-body'),
+      modalFooterA: document.querySelector('.modal-footer a'),
       form: document.querySelector('form'),
       formTitle: document.querySelector('.formTitle'),
       lead: document.querySelector('.lead'),
@@ -149,5 +173,6 @@ export default () => i18next
       loadFeed(validUrls, watchedState);
     });
 
+    handlePostsPreview(watchedState);
     updateFeeds(watchedState);
   });

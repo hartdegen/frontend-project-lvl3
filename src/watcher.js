@@ -47,10 +47,9 @@ const renderPosts = (elems, posts, initialState) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
-    if (watchedState.openedPosts.includes(postId)) {
+    if (watchedState.modal.onceSelectedPosts.includes(postId)) {
       a.classList.add('font-weight-normal');
     } else { a.classList.add('font-weight-bold'); }
-    a.setAttribute('data-id', postId);
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
     const hiddenDescription = document.createElement('span');
@@ -62,6 +61,7 @@ const renderPosts = (elems, posts, initialState) => {
     previewButton.setAttribute('type', 'button');
     previewButton.setAttribute('data-bs-toggle', 'modal');
     previewButton.setAttribute('data-bs-target', '#exampleModal');
+    previewButton.setAttribute('data-id', postId);
     const li = document.createElement('li');
     li.appendChild(a);
     li.appendChild(previewButton);
@@ -70,25 +70,19 @@ const renderPosts = (elems, posts, initialState) => {
   });
   div.append(ul);
   postsElem.innerHTML = div.innerHTML;
-  const liElems = postsElem.querySelectorAll('li');
-  liElems.forEach((li) => li.addEventListener('click', () => {
-    const postId = li.querySelector('a').getAttribute('data-id');
-    watchedState.openedPosts.push(postId);
-  }));
 };
 
-const renderModalPreview = (initialState) => {
+const renderModalPreview = (elems, initialState) => {
+  const { modalTitle, modalBody, modalFooterA } = elems;
   const watchedState = initialState;
-  const lastOpenedPostId = watchedState.openedPosts[watchedState.openedPosts.length - 1];
-  const modal = document.querySelector('.modal');
-  const modalTitle = modal.querySelector('.modal-title');
-  const modalBody = modal.querySelector('.modal-body');
-  const modalA = modal.querySelector('a');
-  const li = document.querySelector(`[data-id=${lastOpenedPostId}]`).parentElement;
+  const postId = watchedState.modal.selectedPostId;
+  if (postId === null) return;
+  const li = document.querySelector(`button.previewButton[data-id=${postId}]`).parentElement;
   const liA = li.querySelector('a');
-  modalTitle.textContent = li.querySelector('a').textContent;
-  modalBody.textContent = li.querySelector('span').textContent;
-  modalA.href = li.querySelector('a').href;
+  const liSpan = li.querySelector('span');
+  modalTitle.textContent = liA.textContent;
+  modalBody.textContent = liSpan.textContent;
+  modalFooterA.href = liA.href;
   liA.classList.remove('font-weight-bold');
   liA.classList.add('font-weight-normal');
 };
@@ -177,8 +171,8 @@ export default (state, elems) => {
       case 'posts':
         renderPosts(elems, value, watchedState);
         break;
-      case 'openedPosts':
-        renderModalPreview(watchedState);
+      case 'modal':
+        renderModalPreview(elems, watchedState);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
