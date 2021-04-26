@@ -11,8 +11,9 @@ const parseRssData = (obj) => {
   const parserError = rssDataDocument.querySelector('parsererror');
   if (rssDataDocument.contains(parserError)) {
     const errorText = parserError.querySelector('div').textContent;
-    console.warn(errorText);
-    throw new Error('unvalidRssLinkError');
+    const error = new Error(errorText);
+    error.type = 'parse';
+    throw error;
   }
   const channel = rssDataDocument.querySelector('rss channel');
   const channelTitle = channel.querySelector('title').textContent;
@@ -75,15 +76,14 @@ const handlePostsPreview = (initialState) => {
   });
 };
 
-const loadFeed = (urls, initialState) => {
+const loadFeed = (url, initialState) => {
   const feedId = _.uniqueId('feed');
   const watchedState = initialState;
   watchedState.loadingProcess = { status: 'loading' };
-  const lastAddedUrl = urls[urls.length - 1];
-  axios.get(useProxyTo(lastAddedUrl))
+  axios.get(useProxyTo(url), { timeout: 10000 })
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
-      const data = makeFeed(parsedData, lastAddedUrl, feedId);
+      const data = makeFeed(parsedData, url, feedId);
       const { feed } = data;
       const posts = data.posts.map(setIdToEveryPost);
       watchedState.feeds.unshift(feed);
@@ -91,15 +91,11 @@ const loadFeed = (urls, initialState) => {
       watchedState.loadingProcess = { status: 'succeed' };
     })
     .catch((err) => {
-      const mappingError = {
-        networkError: 'networkError',
-        unvalidRssLinkError: 'unvalidRssLinkError',
-      };
-      if (err.isAxiosError) {
-        watchedState.loadingProcess = { status: 'failed', error: mappingError.networkError };
-      } else {
-        watchedState.loadingProcess = { status: 'failed', error: mappingError[err.message] || err };
-      }
+      const error = err;
+      if (error.isAxiosError) error.type = 'network'; // не нашёл способа преднастраивать ошибки axios
+      const mappingError = { network: 'networkError', parse: 'unvalidRssLinkError', unknown: 'unkownError' };
+      watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || err.unknown };
+      throw new Error(err.message);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
@@ -169,8 +165,7 @@ export default () => i18next
         return;
       }
 
-      const validUrls = [...urlsFromState, entredUrl];
-      loadFeed(validUrls, watchedState);
+      loadFeed(entredUrl, watchedState);
     });
 
     handlePostsPreview(watchedState);

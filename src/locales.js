@@ -13,6 +13,7 @@ export default {
       unvalidRssLinkError: 'This source does not contain valid rss',
       blacklistError: 'Rss already exists',
       unvalidUrlError: 'Must be valid url',
+      unkownError: 'Unknown error',
     },
   },
 };

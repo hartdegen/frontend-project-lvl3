@@ -116,15 +116,7 @@ const handleLoadingProcess = (elems, value) => {
     default:
       throw new Error(`Unknown loading process status: ${status}`);
   }
-  if (!error) return;
-  switch (error) {
-    case 'networkError':
-    case 'unvalidRssLinkError':
-      renderLoadingInfoElement(elems, error, 'Red');
-      break;
-    default:
-      throw new Error(`Unknown loading process error: ${error}`);
-  }
+  if (error) renderLoadingInfoElement(elems, error, 'Red');
 };
 
 const handleForm = (elems, value) => {
@@ -141,15 +133,9 @@ const handleForm = (elems, value) => {
     default:
       throw new Error(`Unknown form status: ${status}`);
   }
-  if (!error) return;
-  switch (error) {
-    case 'blacklistError':
-    case 'unvalidUrlError':
-      renderLoadingInfoElement(elems, error, 'Red');
-      input.style.border = 'thick solid red';
-      break;
-    default:
-      throw new Error(`Unknown form error: ${error}`);
+  if (error) {
+    renderLoadingInfoElement(elems, error, 'Red');
+    input.style.border = 'thick solid red';
   }
 };
 
