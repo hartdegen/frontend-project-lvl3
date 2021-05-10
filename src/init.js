@@ -2,14 +2,14 @@ import * as _ from 'lodash';
 import axios from 'axios';
 import i18next from 'i18next';
 import watcher from './watcher.js';
-import resources from './locales.js';
+import resources from './locales/en';
 import validate from './validation.js';
 
 const parseRssData = (obj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
-  if (rssDataDocument.contains(parserError)) {
+  if (parserError) {
     const errorText = parserError.querySelector('div').textContent;
     const error = new Error(errorText);
     error.type = 'parse';
@@ -53,25 +53,19 @@ const setIdToEveryPost = (post) => {
   return postWithId;
 };
 
-const handlePostsPreview = (initialState) => {
+const handlePostsPreview = (initialState, elems) => {
   const watchedState = initialState;
-  document.body.addEventListener('click', (e) => {
+  const { postsElem } = elems;
+  postsElem.addEventListener('click', (e) => {
     const postId = e.target.classList.contains('previewButton')
       ? e.target.getAttribute('data-id')
       : false;
     if (postId) {
-      watchedState.modal = {
-        selectedPostId: postId,
-        onceSelectedPosts: _.uniq([...watchedState.modal.onceSelectedPosts, postId]),
-      };
+      watchedState.modal.selectedPostId = postId;
+      watchedState.ui.selectedPosts.add(postId);
     } else if (document.body.classList.contains('modal-open')) {
       const modalContent = e.target.closest('.modal-content');
-      if (modalContent === null) {
-        watchedState.modal = {
-          selectedPostId: null,
-          onceSelectedPosts: [...watchedState.modal.onceSelectedPosts],
-        };
-      }
+      if (modalContent === null) watchedState.modal.selectedPostId = null;
     }
   });
 };
@@ -114,7 +108,7 @@ const updateFeeds = (initialState) => {
       watchedState.posts.unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
-  Promise.all(promises).then(() => { setTimeout(() => updateFeeds(watchedState), 5000); });
+  Promise.all(promises).then(() => setTimeout(() => updateFeeds(watchedState), 5000));
 };
 
 export default () => i18next
@@ -130,7 +124,8 @@ export default () => i18next
       form: { status: 'filling', error: null },
       feeds: [],
       posts: [],
-      modal: { selectedPostId: null, onceSelectedPosts: [] },
+      modal: { selectedPostId: null },
+      ui: { selectedPosts: new Set() },
     };
 
     const elems = {
@@ -141,8 +136,8 @@ export default () => i18next
       formTitle: document.querySelector('.formTitle'),
       lead: document.querySelector('.lead'),
       input: document.querySelector('.inputField'),
-      exampleBlock: document.querySelector('.exampleBlock'),
-      loadingInfo: document.querySelector('.loadingInfo'),
+      exampleBlock: document.getElementById('exampleBlock'),
+      loadingInfo: document.getElementById('loadingInfo'),
       submitButton: document.querySelector('.submitButton'),
       feedsElem: document.querySelector('.feeds'),
       postsElem: document.querySelector('.posts'),
@@ -168,6 +163,6 @@ export default () => i18next
       loadFeed(entredUrl, watchedState);
     });
 
-    handlePostsPreview(watchedState);
+    handlePostsPreview(watchedState, elems);
     updateFeeds(watchedState);
   });

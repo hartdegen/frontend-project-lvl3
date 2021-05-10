@@ -47,7 +47,7 @@ const renderPosts = (elems, posts, initialState) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
-    if (watchedState.modal.onceSelectedPosts.includes(postId)) {
+    if (watchedState.ui.selectedPosts.has(postId)) {
       a.classList.add('font-weight-normal');
     } else { a.classList.add('font-weight-bold'); }
     a.setAttribute('target', '_blank');
@@ -83,6 +83,16 @@ const renderModalPreview = (elems, initialState) => {
   modalTitle.textContent = liA.textContent;
   modalBody.textContent = liSpan.textContent;
   modalFooterA.href = liA.href;
+};
+
+const changeSelectedPostsFonts = (elems, initialState) => {
+  const { postsElem } = elems;
+  const watchedState = initialState;
+  const postId = watchedState.modal.selectedPostId;
+  console.log(111, postId);
+  const li = postsElem.querySelector(`button.previewButton[data-id=${postId}]`).parentElement;
+  console.log(222, li);
+  const liA = li.querySelector('a');
   liA.classList.remove('font-weight-bold');
   liA.classList.add('font-weight-normal');
 };
@@ -157,8 +167,11 @@ export default (state, elems) => {
       case 'posts':
         renderPosts(elems, value, watchedState);
         break;
-      case 'modal':
+      case 'modal.selectedPostId':
         renderModalPreview(elems, watchedState);
+        break;
+      case 'ui.selectedPosts':
+        changeSelectedPostsFonts(elems, watchedState);
         break;
       default:
         throw new Error(`Unknown path: ${path}`);
