@@ -74,7 +74,7 @@ const loadFeed = (url, initialState) => {
   const feedId = _.uniqueId('feed');
   const watchedState = initialState;
   watchedState.loadingProcess = { status: 'loading' };
-  axios.get(useProxyTo(url), { timeout: 10000 })
+  axios.get(useProxyTo(url).toString(), { timeout: 10000 })
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
       const data = makeFeed(parsedData, url, feedId);
