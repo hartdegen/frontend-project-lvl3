@@ -174,7 +174,7 @@ export default (state, elems) => {
         changeSelectedPostsFonts(elems, watchedState);
         break;
       default:
-        throw new Error(`Unknown path: ${path}`);
+        break;
     }
   });
 
