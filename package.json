@@ -2,7 +2,7 @@
   "name": "@hexlet/code",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./src/init.js",
   "scripts": {
     "test": "npx -n --experimental-vm-modules jest",
     "dev": "webpack --mode development",
