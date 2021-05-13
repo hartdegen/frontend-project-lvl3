@@ -1,18 +1,18 @@
 export default {
   ru: {
     translation: {
-      formTitle: 'RSS Reader',
-      lead: 'Start reading RSS today! It is easy, it is nicely.',
+      formTitle: 'RSS агрегатор',
+      lead: 'Начните читать RSS сегодня! Это легко, это красиво.',
       submitButton: 'Add',
-      modalPreviewButton: 'Preview',
-      exampleBlock: 'Example: https://news.yandex.ru/politics.rss',
+      modalPreviewButton: 'Просмотр',
+      exampleBlock: 'Пример: https://ru.hexlet.io/lessons.rss',
 
-      succeed: 'Rss has been loaded',
-      networkError: 'Network Error',
-      unvalidRssLinkError: 'This source does not contain valid rss',
-      blacklistError: 'Rss already exists',
-      unvalidUrlError: 'Must be valid url',
-      unkownError: 'Unknown error',
+      succeed: 'RSS успешно загружен',
+      networkError: 'Ошибка сети',
+      unvalidRssLinkError: 'Ресурс не содержит валидный RSS',
+      blacklistError: 'RSS уже существует',
+      unvalidUrlError: 'Ссылка должна быть валидным URL',
+      unkownError: 'Неизвестная ошибка',
     },
   },
 };

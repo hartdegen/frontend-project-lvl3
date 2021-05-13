@@ -43,7 +43,7 @@ const useProxyTo = (url) => {
   const processedByProxy = new URL('https://hexlet-allorigins.herokuapp.com/get?');
   processedByProxy.searchParams.set('url', url);
   processedByProxy.searchParams.set('disableCache', true);
-  return processedByProxy;
+  return processedByProxy.toString();
 };
 
 const setIdToEveryPost = (post) => {
@@ -74,7 +74,7 @@ const loadFeed = (url, initialState) => {
   const feedId = _.uniqueId('feed');
   const watchedState = initialState;
   watchedState.loadingProcess = { status: 'loading' };
-  axios.get(useProxyTo(url).toString(), { timeout: 10000 })
+  axios.get(useProxyTo(url), { timeout: 10000 })
     .then((rssData) => {
       const parsedData = parseRssData(rssData);
       const data = makeFeed(parsedData, url, feedId);
