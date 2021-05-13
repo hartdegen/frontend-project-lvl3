@@ -1,5 +1,5 @@
 export default {
-  en: {
+  ru: {
     translation: {
       formTitle: 'RSS Reader',
       lead: 'Start reading RSS today! It is easy, it is nicely.',

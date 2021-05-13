@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import axios from 'axios';
 import i18next from 'i18next';
 import watcher from './watcher.js';
-import resources from './locales/en';
+import resources from './locales/ru';
 import validate from './validation.js';
 
 const parseRssData = (obj) => {
@@ -113,7 +113,7 @@ const updateFeeds = (initialState) => {
 
 export default () => i18next
   .init({
-    lng: 'en',
+    lng: 'ru',
     debug: true,
     resources,
   })
