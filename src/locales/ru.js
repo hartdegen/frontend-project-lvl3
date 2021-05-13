@@ -3,10 +3,9 @@ export default {
     translation: {
       formTitle: 'RSS Reader',
       lead: 'Start reading RSS today! It is easy, it is nicely.',
-      inputValue: 'https://news.yandex.ru/politics.rss',
       submitButton: 'Add',
       modalPreviewButton: 'Preview',
-      exampleBlock: 'Example: https://news.google.com/news/rss',
+      exampleBlock: 'Example: https://news.yandex.ru/politics.rss',
 
       succeed: 'Rss has been loaded',
       networkError: 'Network Error',

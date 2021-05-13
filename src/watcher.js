@@ -3,11 +3,10 @@ import onChange from 'on-change';
 
 const signPageElements = (elems) => {
   const {
-    formTitle, lead, input, exampleBlock, submitButton,
+    formTitle, lead, exampleBlock, submitButton,
   } = elems;
   formTitle.innerHTML = i18next.t('formTitle');
   lead.innerHTML = i18next.t('lead');
-  input.value = i18next.t('inputValue');
   exampleBlock.innerHTML = i18next.t('exampleBlock');
   submitButton.innerHTML = i18next.t('submitButton');
 };
