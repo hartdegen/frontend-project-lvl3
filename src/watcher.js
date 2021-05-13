@@ -131,7 +131,7 @@ const handleLoadingProcess = (elems, value) => {
 const handleForm = (elems, value) => {
   const { status, error } = value;
   const { submitButton, input } = elems;
-  input.style.border = null;
+  input.style.border = '1px solid black';
   switch (status) {
     case 'submited':
       submitButton.disabled = true;

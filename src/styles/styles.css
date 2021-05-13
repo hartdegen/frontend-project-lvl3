@@ -25,3 +25,7 @@ h1 {
     align-items: center; 
     justify-content: center; 
 }
+
+.inputField {
+    border: 1px solid black;;
+}
