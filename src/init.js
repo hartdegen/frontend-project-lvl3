@@ -163,6 +163,7 @@ export default () => i18next
       }
 
       loadFeed(entredUrl, watchedState);
+      console.log('конец всех действий после нажатия Enter', state);
     });
 
     handlePostsPreview(watchedState, elems);
