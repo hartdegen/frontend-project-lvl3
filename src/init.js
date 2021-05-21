@@ -147,6 +147,8 @@ export default () => i18next
     watchedState.appStatus = 'initiated';
 
     elems.form.addEventListener('submit', (e) => {
+      console.log('введённое в инпут значение', elems.input.value);
+      console.log('ввод ссылки и нажатие Enter', state);
       e.preventDefault();
       watchedState.form = { status: 'submited' };
       const formData = new FormData(e.target);
