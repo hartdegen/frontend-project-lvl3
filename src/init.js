@@ -88,7 +88,7 @@ const loadFeed = (url, initialState) => {
       const error = err;
       if (error.isAxiosError) error.type = 'network'; // не нашёл способа преднастраивать ошибки axios
       const mappingError = { network: 'networkError', parse: 'unvalidRssLinkError', unknown: 'unkownError' };
-      watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || mappingError[err.unknown] };
+      watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || mappingError.unknown };
       console.log('поймана ошибка', watchedState);
       console.log(999, err);
       console.log(888, err.message);
