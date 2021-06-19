@@ -92,7 +92,7 @@ const loadFeed = (url, initialState) => {
       console.log('поймана ошибка', watchedState);
       console.log(999, err);
       console.log(888, err.message);
-      throw new Error(err.message);
+      // throw new Error(err.message);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
