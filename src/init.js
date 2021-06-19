@@ -88,15 +88,13 @@ const loadFeed = (url, initialState) => {
       const error = err;
       if (error.isAxiosError) error.type = 'network'; // не нашёл способа преднастраивать ошибки axios
       const mappingError = { network: 'networkError', parse: 'unvalidRssLinkError', unknown: 'unkownError' };
-      console.log('тип ошибки', mappingError[err.type])
-      watchedState.loadingProcess = {
-        status: 'failed', error: mappingError[err.type],
-      // || mappingError.unknown };
-      };
+      watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || err.unknown };
+
       console.log('поймана ошибка', watchedState);
-      console.log(999, err);
-      console.log(888, err.message);
-      // throw new Error(err.message);
+      console.log('ошибка', err);
+      console.log('сообщение из ошибки', err.message);
+      console.log('тип ошибки', err.type);
+      throw new Error(err.message);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
