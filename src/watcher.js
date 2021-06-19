@@ -98,8 +98,13 @@ const changeSelectedPostsFonts = (elems, initialState) => {
 
 const renderLoadingInfoElement = (elems, statusCase, styleColor) => {
   const { loadingInfo } = elems;
-  loadingInfo.textContent = i18next.t(statusCase);
-  loadingInfo.style.color = styleColor;
+  if (statusCase) {
+    loadingInfo.textContent = i18next.t(statusCase);
+    loadingInfo.style.color = styleColor;
+  } else {
+    loadingInfo.textContent = '';
+    loadingInfo.style.color = null;
+  }
 };
 
 const handleAppStatus = (elems, status) => {
@@ -110,22 +115,6 @@ const handleAppStatus = (elems, status) => {
     default:
       throw new Error(`Unknown app status: ${status}`);
   }
-};
-
-const handleLoadingProcess = (elems, value) => {
-  const { status, error } = value;
-  switch (status) {
-    case 'loading':
-      break;
-    case 'succeed':
-      renderLoadingInfoElement(elems, 'succeed', 'Green');
-      break;
-    case 'failed':
-      break;
-    default:
-      throw new Error(`Unknown loading process status: ${status}`);
-  }
-  if (error) renderLoadingInfoElement(elems, error, 'Red');
 };
 
 const handleForm = (elems, value) => {
@@ -146,6 +135,26 @@ const handleForm = (elems, value) => {
     renderLoadingInfoElement(elems, error, 'Red');
     input.style.border = 'thick solid red';
   }
+};
+
+const handleLoadingProcess = (elems, value) => {
+  const { status, error } = value;
+  switch (status) {
+    case 'loading':
+      handleForm(elems, { status: 'submited' });
+      renderLoadingInfoElement(elems);
+      break;
+    case 'succeed':
+      handleForm(elems, { status: 'filling' });
+      renderLoadingInfoElement(elems, 'succeed', 'Green');
+      break;
+    case 'failed':
+      handleForm(elems, { status: 'filling', error });
+      break;
+    default:
+      throw new Error(`Unknown loading process status: ${status}`);
+  }
+  if (error) renderLoadingInfoElement(elems, error, 'Red');
 };
 
 export default (state, elems) => {

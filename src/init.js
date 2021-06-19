@@ -118,6 +118,7 @@ export default () => i18next
     resources,
   })
   .then(() => {
+    console.log(111, 'INITIALIZED !!!');
     const state = {
       appStatus: 'init',
       loadingProcess: { status: 'idle', error: null },
