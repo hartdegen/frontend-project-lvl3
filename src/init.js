@@ -96,8 +96,8 @@ const loadFeed = (url, initialState) => {
       console.log(999, err);
       console.log(888, err.message);
       // throw new Error(err.message);
-    })
-    .finally(() => { watchedState.form = { status: 'filling' }; });
+    });
+  // .finally(() => { watchedState.form = { status: 'filling' }; });
 };
 
 const updateFeeds = (initialState) => {
