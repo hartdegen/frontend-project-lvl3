@@ -139,6 +139,7 @@ const handleForm = (elems, value) => {
 
 const handleLoadingProcess = (elems, value) => {
   const { status, error } = value;
+  const { input } = elems;
   switch (status) {
     case 'loading':
       handleForm(elems, { status: 'submited' });
@@ -147,6 +148,7 @@ const handleLoadingProcess = (elems, value) => {
     case 'succeed':
       handleForm(elems, { status: 'filling' });
       renderLoadingInfoElement(elems, 'succeed', 'Green');
+      input.value = '';
       break;
     case 'failed':
       handleForm(elems, { status: 'filling', error });
