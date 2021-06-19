@@ -89,6 +89,9 @@ const loadFeed = (url, initialState) => {
       if (error.isAxiosError) error.type = 'network'; // не нашёл способа преднастраивать ошибки axios
       const mappingError = { network: 'networkError', parse: 'unvalidRssLinkError', unknown: 'unkownError' };
       watchedState.loadingProcess = { status: 'failed', error: mappingError[err.type] || err.unknown };
+      console.log('поймана ошибка', watchedState);
+      console.log(999, err);
+      console.log(888, err.message);
       throw new Error(err.message);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
@@ -164,7 +167,7 @@ export default () => i18next
       }
 
       loadFeed(entredUrl, watchedState);
-      console.log('конец всех действий после нажатия Enter', state);
+      console.log('конец действий после нажатия Enter', state);
     });
 
     handlePostsPreview(watchedState, elems);
