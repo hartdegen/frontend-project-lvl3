@@ -92,7 +92,7 @@ const loadFeed = (url, initialState) => {
       console.log('сообщение из ошибки', error.message);
       console.log('тип ошибки', error.type);
 
-      watchedState.loadingProcess = { status: 'failed', error: mappingError[error.type] || error.unknown };
+      watchedState.loadingProcess = { status: 'failed', error: mappingError[error.type] || mappingError.unknown };
 
       console.log('ошибка помещена в WatchedState', watchedState);
 

@@ -171,7 +171,6 @@ export default (state, elems) => {
         break;
       case 'loadingProcess':
         handleLoadingProcess(elems, value);
-        console.log('handleLoadingProcess state', state);
         break;
       case 'form':
         handleForm(elems, value);
