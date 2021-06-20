@@ -138,6 +138,7 @@ const handleForm = (elems, value) => {
 };
 
 const handleLoadingProcess = (elems, value) => {
+  console.log('value in handleLoadingProcess', value);
   const { status, error } = value;
   const { input } = elems;
   switch (status) {
@@ -154,7 +155,6 @@ const handleLoadingProcess = (elems, value) => {
       break;
     case 'failed':
       handleForm(elems, { status: 'filling', error });
-      console.log('function "handleLoadingProcess"', value);
       input.disabled = false;
       break;
     default:
