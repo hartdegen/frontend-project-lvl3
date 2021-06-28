@@ -11,6 +11,7 @@ const parseRssData = (obj) => {
   const parserError = rssDataDocument.querySelector('parsererror');
   if (parserError) {
     const errorText = parserError.querySelector('div').textContent;
+    console.log(11111, 'parseError', parserError)
     const error = new Error(errorText);
     error.type = 'parse';
     throw error;
