@@ -7,7 +7,8 @@ import validate from './validation.js';
 
 const parseRssData = (obj) => {
   const parser = new DOMParser();
-  console.log(7777777777777, 'obj.data.contents', obj.data.contents);
+  console.log(5555555555555, 'obj', obj);
+  console.log(6666666666666, 'obj.data.contents', obj.data.contents);
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
   console.log(7777777777777, 'rssDataDocument.location', rssDataDocument.location);
