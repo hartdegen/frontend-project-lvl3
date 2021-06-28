@@ -11,7 +11,7 @@ const parseRssData = (obj) => {
   console.log(6666666666666, 'obj.data.contents', obj.data.contents);
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
-  console.log(7777777777777, 'rssDataDocument.location', rssDataDocument.location);
+  console.log(7777777777777, 'rssDataDocument.all', rssDataDocument.all);
   console.log(8888888888888, 'parseError', parserError);
   console.log(9999999999999, 'parseErrorOuterHTML', parserError.outerHTML);
   if (parserError) {
