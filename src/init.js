@@ -9,7 +9,8 @@ const parseRssData = (obj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
-  console.log(9999999999999, 'parseError', parserError.outerHTML);
+  console.log(8888888888888, 'parseError', parserError);
+  console.log(9999999999999, 'parseErrorOuterHTML', parserError.outerHTML);
   if (parserError) {
     const errorText = parserError.querySelector('div').textContent;
     const error = new Error(errorText);
