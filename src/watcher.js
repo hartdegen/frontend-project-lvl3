@@ -53,7 +53,7 @@ const renderPosts = (elems, posts, initialState) => {
     a.setAttribute('rel', 'noopener noreferrer');
     const hiddenDescription = document.createElement('span');
     hiddenDescription.textContent = linkDescription;
-    hiddenDescription.hidden = true;
+    // hiddenDescription.hidden = true;
     const previewButton = document.createElement('button');
     previewButton.textContent = i18next.t('modalPreviewButton');
     previewButton.classList.add('btn', 'btn-primary', 'previewButton');
