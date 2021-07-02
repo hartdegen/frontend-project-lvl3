@@ -98,7 +98,7 @@ const loadFeed = (url, initialState) => {
 
       console.log('ошибка помещена в WatchedState \n', watchedState);
 
-      throw new Error(error);
+      // throw new Error(error);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
