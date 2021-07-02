@@ -48,7 +48,7 @@ const renderPosts = (elems, posts, initialState) => {
     a.textContent = title;
     if (watchedState.ui.selectedPosts.has(postId)) {
       a.classList.add('font-weight-normal');
-    } else { a.classList.add('font-weight-bold'); }
+    } else { a.classList.add('fw-bold'); }
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
     const hiddenDescription = document.createElement('span');
@@ -92,7 +92,7 @@ const changeSelectedPostsFonts = (elems, initialState) => {
   const li = postsElem.querySelector(`button.previewButton[data-id=${postId}]`).parentElement;
   console.log(222, li);
   const liA = li.querySelector('a');
-  liA.classList.remove('font-weight-bold');
+  liA.classList.remove('fw-bold');
   liA.classList.add('font-weight-normal');
 };
 
