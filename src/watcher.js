@@ -146,16 +146,19 @@ const handleLoadingProcess = (elems, value) => {
       handleForm(elems, { status: 'submited' });
       renderLoadingInfoElement(elems);
       input.disabled = true;
+      input.readOnly = true;
       break;
     case 'succeed':
       handleForm(elems, { status: 'filling' });
       renderLoadingInfoElement(elems, 'succeed', 'Green');
       input.disabled = false;
+      input.readOnly = false;
       input.value = '';
       break;
     case 'failed':
       handleForm(elems, { status: 'filling', error });
       input.disabled = false;
+      input.readOnly = false;
       break;
     default:
       throw new Error(`Unknown loading process status: ${status}`);
