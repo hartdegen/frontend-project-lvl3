@@ -7,14 +7,9 @@ import validate from './validation.js';
 
 const parseRssData = (obj) => {
   const parser = new DOMParser();
-  // console.log(5555555555555, 'obj', obj);
-  // console.log(6666666666666, 'obj.data.contents', obj.data.contents);
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
-  console.log(7777777777777, 'rssDataDocument.innerHTML', rssDataDocument);
   if (parserError !== null) {
-    console.log(8888888888888888, 'parseError', parserError);
-    console.log(9999999999999999, 'parseErrorText', parserError.textContent);
     const errorText = parserError.textContent;
     const error = new Error(errorText);
     error.type = 'parse';
@@ -103,7 +98,7 @@ const loadFeed = (url, initialState) => {
 
       console.log('ошибка помещена в WatchedState \n', watchedState);
 
-      throw new Error(error.message);
+      throw new Error(error);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
