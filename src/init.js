@@ -7,14 +7,13 @@ import validate from './validation.js';
 
 const parseRssData = (obj) => {
   const parser = new DOMParser();
-  console.log(5555555555555, 'obj', obj);
-  console.log(6666666666666, 'obj.data.contents', obj.data.contents);
+  // console.log(5555555555555, 'obj', obj);
+  // console.log(6666666666666, 'obj.data.contents', obj.data.contents);
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
-  console.log(7777777777777, 'rssDataDocument.all', rssDataDocument.all);
+  console.log(7777777777777, 'rssDataDocument.innerHTML', rssDataDocument);
   console.log(8888888888888, 'parseError', parserError);
-  console.log(9999999999999, 'parseErrorOuterHTML', parserError.outerHTML);
-  if (parserError) {
+  if (parserError !== null) {
     const errorText = parserError.querySelector('div').textContent;
     const error = new Error(errorText);
     error.type = 'parse';
@@ -90,6 +89,8 @@ const loadFeed = (url, initialState) => {
       watchedState.loadingProcess = { status: 'succeed' };
     })
     .catch((err) => {
+      console.log(' CATCH ERRRRRRRRRRRRR', err);
+
       const error = err;
       if (error.isAxiosError) error.type = 'network'; // не нашёл способа преднастраивать ошибки axios
       const mappingError = { network: 'networkError', parse: 'unvalidRssLinkError', unknown: 'unkownError' };
