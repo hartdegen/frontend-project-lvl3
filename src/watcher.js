@@ -33,7 +33,6 @@ const renderFeeds = (elems, feeds) => {
 };
 
 const renderPosts = (elems, posts, initialState) => {
-  console.log('renderPosts 11111111111', posts);
   const watchedState = initialState;
   const { postsElem } = elems;
   const div = document.createElement('div');
@@ -71,8 +70,7 @@ const renderModalPreview = (elems, initialState) => {
   const watchedState = initialState;
   const postId = watchedState.modal.selectedPostId;
   const { posts } = watchedState;
-  const description = JSON.parse(JSON.stringify(posts))
-    .filter((post) => post.postId === postId)[0].linkDescription;
+  const description = posts.filter((post) => post.postId === postId)[0].linkDescription;
   if (postId === null) return;
   const li = document.querySelector(`button.previewButton[data-id=${postId}]`).parentElement;
   const liA = li.querySelector('a');
@@ -133,7 +131,6 @@ const handleForm = (elems, value) => {
 };
 
 const handleLoadingProcess = (elems, value) => {
-  console.log('value in handleLoadingProcess', value);
   const { status, error } = value;
   const { input } = elems;
   switch (status) {
