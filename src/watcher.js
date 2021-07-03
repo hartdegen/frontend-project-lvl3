@@ -41,10 +41,7 @@ const renderPosts = (elems, posts, initialState) => {
   const ul = document.createElement('ul');
   h2.textContent = 'Posts';
   div.appendChild(h2);
-  posts.forEach(({
-    // title, link, linkDescription, postId,
-    title, link, postId,
-  }) => {
+  posts.forEach(({ title, link, postId }) => {
     const a = document.createElement('a');
     a.href = link;
     a.textContent = title;
@@ -53,9 +50,6 @@ const renderPosts = (elems, posts, initialState) => {
     } else { a.classList.add('fw-bold'); }
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
-    // const hiddenDescription = document.createElement('span');
-    // hiddenDescription.textContent = linkDescription;
-    // hiddenDescription.hidden = true;
     const previewButton = document.createElement('button');
     previewButton.textContent = i18next.t('modalPreviewButton');
     previewButton.classList.add('btn', 'btn-primary', 'previewButton');
@@ -66,7 +60,6 @@ const renderPosts = (elems, posts, initialState) => {
     const li = document.createElement('li');
     li.appendChild(a);
     li.appendChild(previewButton);
-    // li.appendChild(hiddenDescription);
     ul.appendChild(li);
   });
   div.append(ul);
@@ -80,13 +73,10 @@ const renderModalPreview = (elems, initialState) => {
   const { posts } = watchedState;
   const description = JSON.parse(JSON.stringify(posts))
     .filter((post) => post.postId === postId)[0].linkDescription;
-  console.log('renderModalPreview 222222222222', description);
   if (postId === null) return;
   const li = document.querySelector(`button.previewButton[data-id=${postId}]`).parentElement;
   const liA = li.querySelector('a');
-  // const liSpan = li.querySelector('span');
   modalTitle.textContent = liA.textContent;
-  // modalBody.textContent = liSpan.textContent;
   modalBody.textContent = description;
   modalFooterA.href = liA.href;
 };

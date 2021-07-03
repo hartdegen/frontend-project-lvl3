@@ -9,7 +9,7 @@ const parseRssData = (obj) => {
   const parser = new DOMParser();
   const rssDataDocument = parser.parseFromString(obj.data.contents, 'text/xml');
   const parserError = rssDataDocument.querySelector('parsererror');
-  if (parserError !== null) {
+  if (parserError) {
     const errorText = parserError.textContent;
     const error = new Error(errorText);
     error.type = 'parse';
@@ -85,20 +85,10 @@ const loadFeed = (url, initialState) => {
       watchedState.loadingProcess = { status: 'succeed' };
     })
     .catch((err) => {
-      console.log(' CATCH ERRRRRRRRRRRRR', err);
-
       const error = err;
-      if (error.isAxiosError) error.type = 'network'; // не нашёл способа преднастраивать ошибки axios
+      if (error.isAxiosError) error.type = 'network';
       const mappingError = { network: 'networkError', parse: 'unvalidRssLinkError', unknown: 'unkownError' };
-      console.log('ошибка \n', error);
-      console.log('сообщение из ошибки \n', error.message);
-      console.log('тип ошибки \n', error.type);
-
       watchedState.loadingProcess = { status: 'failed', error: mappingError[error.type] || mappingError.unknown };
-
-      console.log('ошибка помещена в WatchedState \n', watchedState);
-
-      // throw new Error(error);
     })
     .finally(() => { watchedState.form = { status: 'filling' }; });
 };
@@ -127,7 +117,6 @@ export default () => i18next
     resources,
   })
   .then(() => {
-    console.log(111, 'INITIALIZED !!!');
     const state = {
       appStatus: 'init',
       loadingProcess: { status: 'idle', error: null },
@@ -157,8 +146,6 @@ export default () => i18next
     watchedState.appStatus = 'initiated';
 
     elems.form.addEventListener('submit', (e) => {
-      console.log('введённое в инпут значение', elems.input.value);
-      console.log('ввод ссылки и нажатие Enter', state);
       e.preventDefault();
       watchedState.form = { status: 'submited' };
       const formData = new FormData(e.target);
@@ -173,7 +160,6 @@ export default () => i18next
       }
 
       loadFeed(entredUrl, watchedState);
-      console.log('конец действий после нажатия Enter', state);
     });
 
     handlePostsPreview(watchedState, elems);
