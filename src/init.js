@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 import axios from 'axios';
 import i18next from 'i18next';
 import watcher from './watcher.js';
-import resources from './locales/ru';
+import resources from './locales';
 import validate from './validation.js';
 
 const parseRssData = (obj) => {
@@ -107,7 +107,10 @@ const updateFeeds = (initialState) => {
       watchedState.posts.unshift(...newPosts);
     })
     .catch((e) => { console.warn(e); }));
-  Promise.all(promises).then(() => setTimeout(() => updateFeeds(watchedState), 5000));
+  Promise.all(promises).then(() => {
+    setTimeout(() => updateFeeds(watchedState), 5000);
+    // return new Promise();
+  });
 };
 
 export default () => i18next
@@ -117,6 +120,7 @@ export default () => i18next
     resources,
   })
   .then(() => {
+    console.log(11111, resources);
     const state = {
       appStatus: 'init',
       loadingProcess: { status: 'idle', error: null },
