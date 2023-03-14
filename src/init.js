@@ -40,7 +40,7 @@ const makeFeed = (obj, url, feedId) => {
 };
 
 const useProxyTo = (url) => {
-  const processedByProxy = new URL('https://hexlet-allorigins.herokuapp.com/get?');
+  const processedByProxy = new URL('https://allorigins.hexlet.app/get?');
   processedByProxy.searchParams.set('url', url);
   processedByProxy.searchParams.set('disableCache', true);
   return processedByProxy.toString();
